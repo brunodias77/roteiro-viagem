@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Roteiro da viagem · Madrid, Paris, Barcelona e Andorra</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,800;112,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0}img{max-width:100%}
+/* Layout: uma coluna estreita, estilo diagrama de metrô. Cada dia é uma linha com cor própria; as paradas são estações e a distância real entre elas define o comprimento do trecho no mapa de cima. */
+:root {
+  --bg: #F2F4F1;
+  --surface: #FFFFFF;
+  --fg: #15222C;
+  --muted: #5B6A74;
+  --rule: #D9DFDB;
+  --chip: #E6EBE8;
+  --warn-bg: #FFF1D6;
+  --warn-fg: #5A3B00;
+  --warn-rule: #E8C77A;
+  --l1: #6B3FA0;
+  --l2: #1F78C8;
+  --l3: #D8402A;
+  --line: var(--l1);
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F171D; --surface: #17222A; --fg: #E8EEF0; --muted: #94A5AF; --rule: #2A3943; --chip: #223039;
+    --warn-bg: #3A2E10; --warn-fg: #F6DDA0; --warn-rule: #6B5518;
+    --l1: #B596EA; --l2: #6DB3F2; --l3: #FF8068;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F171D; --surface: #17222A; --fg: #E8EEF0; --muted: #94A5AF; --rule: #2A3943; --chip: #223039;
+  --warn-bg: #3A2E10; --warn-fg: #F6DDA0; --warn-rule: #6B5518;
+  --l1: #B596EA; --l2: #6DB3F2; --l3: #FF8068;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 720px; margin: 0 auto; }
+.kicker { font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--f-display); font-stretch: 112%; font-weight: 700; font-size: clamp(34px, 8vw, 52px); line-height: 1.02; margin: 6px 0 8px; letter-spacing: -.01em; text-wrap: balance; }
+.base { color: var(--muted); margin: 0 0 22px; max-width: 52ch; }
+
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.tab {
+  font: 600 14px var(--f-body); color: var(--fg); background: var(--chip);
+  border: 0; border-radius: 999px; padding: 9px 16px; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--line); color: var(--bg); }
+.tab:focus-visible, a:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+
+.day.d1 { --line: var(--l1); }
+.day.d2 { --line: var(--l2); }
+.day.d3 { --line: var(--l3); }
+.tab.t1[aria-selected="true"] { background: var(--l1); }
+.tab.t2[aria-selected="true"] { background: var(--l2); }
+.tab.t3[aria-selected="true"] { background: var(--l3); }
+
+h2 { font-family: var(--f-display); font-stretch: 112%; font-weight: 700; font-size: 24px; margin: 0 0 14px; text-wrap: balance; }
+
+.facts { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0 0 20px; padding: 0; list-style: none; font-size: 14px; }
+.facts li { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.facts b { font-family: var(--f-mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+.facts span { color: var(--muted); }
+
+.map { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 16px 12px; margin-bottom: 26px; }
+.map-title { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 14px; }
+.strip { display: flex; align-items: center; }
+.dot {
+  flex: none; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--surface); border: 3px solid var(--line); color: var(--fg);
+  display: grid; place-items: center; font: 600 11px var(--f-mono);
+}
+.strip.dense .dot { width: 19px; height: 19px; border-width: 2px; font-size: 9px; }
+.seg { height: 5px; background: var(--line); min-width: 0; }
+.seg.transit { background: repeating-linear-gradient(90deg, var(--line) 0 7px, transparent 7px 12px); }
+.legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.legend i { display: inline-block; width: 26px; height: 5px; background: var(--line); vertical-align: middle; margin-right: 6px; }
+.legend i.tr { background: repeating-linear-gradient(90deg, var(--line) 0 7px, transparent 7px 12px); }
+
+.gmap { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+.gmap-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; }
+.gmap-head .map-title { margin: 0; }
+.gmap-open { font: 600 13px var(--f-body); color: var(--bg); background: var(--line); border-radius: 999px; padding: 6px 14px; text-decoration: none; }
+.gmap iframe { display: block; width: 100%; height: 360px; border: 0; border-block: 1px solid var(--rule); background: var(--chip); }
+.gmap-key { list-style: none; margin: 0; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; }
+.gmap-key li { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+.gmap-key b { font-family: var(--f-mono); font-weight: 600; color: var(--line); }
+.seg-ctl { display: inline-flex; background: var(--chip); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg-ctl button, .leg-chip, .leg-map { font: 600 13px var(--f-body); color: var(--fg); border: 0; cursor: pointer; }
+.seg-ctl button { background: transparent; border-radius: 999px; padding: 6px 12px; }
+.seg-ctl button[aria-pressed="true"] { background: var(--line); color: var(--bg); }
+.leg-chips { display: flex; gap: 6px; overflow-x: auto; padding: 0 16px 12px; scrollbar-width: thin; }
+.leg-chip { flex: none; background: var(--chip); border-radius: 8px; padding: 5px 10px; font-family: var(--f-mono); font-size: 12px; }
+.leg-chip small { font-weight: 400; color: var(--muted); }
+.leg-chip[aria-pressed="true"] { background: var(--line); color: var(--bg); }
+.leg-chip[aria-pressed="true"] small { color: inherit; opacity: .85; }
+.gmap-bar { display: flex; gap: 10px 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 12px 16px 0; }
+.gmap-cap { margin: 0; font-size: 13px; color: var(--muted); flex: 1 1 240px; }
+.leg-map { background: transparent; padding: 0; text-decoration: underline; text-underline-offset: 3px; font-size: 13px; }
+.seg-ctl button:focus-visible, .leg-chip:focus-visible, .leg-map:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.pdf-row { margin: -8px 0 18px; }
+.dinfo .pdf-row { margin: 0 0 16px; }
+.pdf-btn { font: 600 13px var(--f-body); color: var(--bg); background: var(--line); border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+.pdf-btn:disabled { opacity: .6; cursor: progress; }
+.pdf-btn:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.pdf-stage { position: fixed; left: -10000px; top: 0; }
+.pdf { width: 720px; background: #fff; color: #15222C; font: 13px/1.45 var(--f-body); padding: 4px 0; }
+.pdf a { color: #1F5FA8; text-decoration: none; }
+.pdf h1 { font: 700 24px/1.15 var(--f-display); font-stretch: 112%; margin: 2px 0 6px; color: #15222C; }
+.pdf h2 { font: 700 15px var(--f-display); font-stretch: 112%; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--pl); color: #15222C; }
+.pdf-k { font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: #5B6A74; margin: 0; }
+.pdf-f { margin: 0; color: #5B6A74; }
+.pdf-stop { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; }
+.pdf-n { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--pl); display: grid; place-items: center; font: 700 10px var(--f-mono); color: #15222C; }
+.pdf-stop p { margin: 0; }
+.pdf-t { font-size: 14px; }
+.pdf-t b { font-family: var(--f-mono); font-weight: 600; color: var(--pl); }
+.pdf-m { font-size: 12px; color: #5B6A74; }
+.pdf-x { margin-top: 2px !important; }
+.pdf-leg { margin: 0 0 0 10px; padding: 4px 0 4px 21px; border-left: 2px dashed #C9D1CC; font-size: 12px; color: #3A4A55; }
+.pdf-leg b { color: #15222C; font-weight: 600; }
+.pdf ul { margin: 0; padding-left: 18px; }
+.pdf li { margin: 0 0 5px; }
+.pdf-alert { background: #FFF1D6; border: 1px solid #E8C77A; border-radius: 6px; padding: 7px 10px; margin: 0 0 6px; color: #5A3B00; }
+.pdf-tab { border-collapse: collapse; width: 100%; }
+.pdf-tab td { padding: 4px 8px 4px 0; border-bottom: 1px solid #E1E6E3; }
+.pdf-tab td:nth-child(2), .pdf-tab td:nth-child(3) { font-family: var(--f-mono); white-space: nowrap; }
+.pdf-tr { padding: 6px 0; }
+.pdf-tr p { margin: 0; }
+.pdf-img { text-align: center; padding: 6px 0 10px; }
+.pdf-img img { width: 520px; border: 1px solid #E1E6E3; border-radius: 8px; }
+.pdf-foot { margin-top: 18px; font-size: 11px; color: #5B6A74; }
+@media print { .top, .tabs, .pdf-row, .gmap, .food, .map { display: none !important; } }
+.pin-x { width: 28px; height: 28px; background: #fff; color: var(--pc); border: 2px solid var(--pc); font-size: 13px; }
+.food-list .pin-x { border: 2px solid var(--pc); background: var(--surface); }
+.extras { border-top: 1px solid var(--rule); padding-top: 12px; }
+.extras .map-title { margin: 0 16px; }
+.pin-f { width: 28px; height: 28px; border-radius: 8px; font-size: 12px; }
+.food { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+.food summary { display: flex; align-items: baseline; gap: 6px 12px; flex-wrap: wrap; padding: 12px 16px; cursor: pointer; list-style: none; }
+.food summary::-webkit-details-marker { display: none; }
+.food summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+.food[open] summary::before { transform: rotate(90deg); }
+.food summary .map-title { margin: 0; }
+.food-sum { font-size: 13px; color: var(--muted); }
+.food summary:focus-visible { outline: 3px solid var(--fg); outline-offset: -3px; }
+.food-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; padding: 0 16px 12px; }
+.fchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fchip, .food-near { font: 600 12px var(--f-body); color: var(--fg); background: var(--chip); border: 0; border-radius: 999px; padding: 5px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.fchip i { width: 10px; height: 10px; border-radius: 3px; }
+.fchip small { color: var(--muted); font-weight: 500; }
+.fchip[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+.food-near { background: var(--fg); color: var(--bg); }
+.fchip:focus-visible, .food-near:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+#food-canvas { height: 340px; border-block: 1px solid var(--rule); background: var(--chip); z-index: 0; }
+.food-status { margin: 0; padding: 8px 16px 0; font-size: 12px; color: var(--muted); }
+.food-status:empty { display: none; }
+.food-list { list-style: none; margin: 0; padding: 4px 16px 8px; }
+.food-list li { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-top: 1px solid var(--rule); }
+.food-list li:first-child { border-top: 0; }
+.food-list li[hidden] { display: none; }
+.food-list .pin { flex: none; box-shadow: none; border: 0; }
+.food-list a { font-weight: 600; color: var(--fg); text-underline-offset: 3px; text-decoration-color: var(--rule); }
+.fl-meta { display: block; font-size: 12px; color: var(--muted); }
+.food-list p { margin: 2px 0 0; font-size: 13px; }
+#gmap-canvas { height: 380px; border-block: 1px solid var(--rule); background: var(--chip); z-index: 0; }
+.pin { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--pc); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); font: 700 12px var(--f-mono); color: #fff; }
+.pin-h { background: #15222C; }
+.pin-air { background: #15222C; font-size: 15px; }
+.map-view { display: inline-flex; gap: 4px; }
+.map-view { padding: 0 16px 12px; }
+.map-view button { font: 600 12px var(--f-body); color: var(--fg); background: var(--chip); border: 0; border-radius: 999px; padding: 5px 11px; cursor: pointer; }
+.map-view button[aria-pressed="true"] { background: var(--line); color: var(--bg); }
+.leaflet-popup-content { font: 14px var(--f-body); }
+.metro { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px 4px; margin-bottom: 26px; }
+.mt-list { list-style: none; margin: 0; padding: 0; }
+.mt-row { padding: 12px 0; border-top: 1px solid var(--rule); }
+.mt-row:first-child { border-top: 0; padding-top: 4px; }
+.mt-head { display: flex; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; align-items: baseline; }
+.mt-pair { font-weight: 600; }
+.mt-pair b { font-family: var(--f-mono); color: var(--line); }
+.mt-head a { font-size: 13px; color: var(--fg); font-weight: 600; text-underline-offset: 3px; }
+.mt-rides { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.mt-rides li { display: flex; gap: 10px; align-items: baseline; font-size: 14px; }
+.ln { flex: none; min-width: 38px; text-align: center; font: 700 12px var(--f-mono); padding: 2px 6px; border-radius: 6px; background: var(--c); color: #fff; }
+.mt-dir { color: var(--muted); font-size: 13px; }
+.mt-note, .mt-walk { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.mt-walk { display: flex; gap: 6px; align-items: flex-start; }
+.mt-walk svg { width: 16px; height: 16px; flex: none; fill: currentColor; margin-top: 2px; }
+.guide { display: block; margin-top: 10px; }
+.guide img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 10px; }
+.gmap-note { margin: 0; padding: 0 16px 12px; font-size: 12px; color: var(--muted); }
+
+.tl { list-style: none; margin: 0; padding: 0; }
+.node { position: relative; padding-left: 52px; }
+.node::before { content: ""; position: absolute; left: 15px; top: 0; bottom: 0; width: 5px; background: var(--line); }
+.node.first::before { top: 20px; }
+.node.last::before { bottom: auto; height: 20px; }
+.node.solo::before { display: none; }
+.mark {
+  position: absolute; left: 6px; top: 8px; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--surface); border: 3px solid var(--line);
+  display: grid; place-items: center; font: 600 11px var(--f-mono);
+}
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; margin: 0 0 0; min-width: 0; }
+.card h3 { margin: 0; font-family: var(--f-display); font-stretch: 112%; font-weight: 700; font-size: 17px; line-height: 1.25; overflow-wrap: anywhere; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-top: 8px; }
+.tag { background: var(--chip); border-radius: 6px; padding: 2px 9px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.hours { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.win { font-family: var(--f-mono); font-size: 12px; font-weight: 500; padding: 2px 9px; border-radius: 6px; background: var(--line); color: var(--bg); }
+.note { margin: 10px 0 0; max-width: 60ch; }
+
+.leg { position: relative; padding: 9px 0 9px 52px; margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.leg::before { content: ""; position: absolute; left: 15px; top: 0; bottom: 0; width: 5px; background: var(--line); }
+.leg.transit::before { background: repeating-linear-gradient(180deg, var(--line) 0 7px, transparent 7px 12px); }
+.leg svg { width: 16px; height: 16px; flex: none; fill: currentColor; }
+.leg b { font-family: var(--f-mono); font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; }
+.leg a { color: var(--fg); font-weight: 600; text-underline-offset: 3px; }
+
+.alerts { margin-top: 28px; display: grid; gap: 10px; }
+.alert { background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-rule); border-radius: 10px; padding: 12px 14px; }
+.alert strong { display: block; font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.alert p { margin: 0; max-width: 62ch; }
+.foot { margin-top: 32px; font-size: 12px; color: var(--muted); max-width: 62ch; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .day { animation: in .25s ease-out; }
+  @keyframes in { from { opacity: .0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+}
+.ln[style*="FFD100"] { color: #15222C; }
+.top { position: sticky; top: 0; z-index: 1000; background: var(--bg); margin: -28px calc(-1 * max(16px, env(safe-area-inset-left, 0px))) 22px; padding: 12px max(16px, env(safe-area-inset-left, 0px)) 10px; border-bottom: 1px solid var(--rule); }
+.top-in { max-width: 720px; margin: 0 auto; }
+.trip { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.cities { display: flex; overflow-x: auto; scrollbar-width: none; gap: 4px; background: var(--chip); border-radius: 12px; padding: 4px; }
+.city { flex: 1 0 auto; white-space: nowrap; font: 700 15px var(--f-display); font-stretch: 100%; color: var(--fg); background: transparent; border: 0; border-radius: 9px; padding: 8px 10px 6px; cursor: pointer; line-height: 1.15; min-width: 0; }
+.city small { display: block; font: 500 11px var(--f-mono); color: var(--muted); margin-top: 2px; }
+.city[aria-selected="true"] { background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.city:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+@media (max-width: 440px) { .city { font-size: 13px; padding: 7px 7px 5px; } .city small { font-size: 10px; } }
+.gmap-key a { color: var(--fg); text-underline-offset: 3px; text-decoration-color: var(--rule); }
+.gmap-key a:hover { text-decoration-color: currentColor; }
+.gmap-head { border-bottom: 1px solid var(--rule); }
+.day.dinfo { --line: var(--fg); }
+.tab.ti[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.tab.ti { display: inline-flex; gap: 6px; align-items: center; }
+h2 .range { font: 500 12px var(--f-mono); color: var(--muted); border: 1px solid var(--rule); border-radius: 999px; padding: 2px 9px; vertical-align: middle; margin-left: 6px; white-space: nowrap; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.info-card { padding: 4px 14px; margin-bottom: 16px; }
+.sched { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sched th { text-align: left; font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 10px 6px 8px; border-bottom: 1px solid var(--rule); }
+.sched td { padding: 9px 6px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.sched tr:last-child td { border-bottom: 0; }
+.sched td:first-child, .sched th:first-child { width: 28px; padding-left: 0; }
+.sched td:nth-child(2) { font-weight: 600; }
+.sched td:nth-child(3), .sched td:nth-child(4) { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sched td:nth-child(4) { font-weight: 500; }
+.ico { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; color: var(--muted); }
+.hotel { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+.hotel-ico { width: 28px; height: 28px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.hotel-txt { flex: 1 1 200px; min-width: 0; }
+.hotel-txt .map-title { margin: 0 0 2px; }
+.hotel-txt strong { display: block; font-family: var(--f-display); font-stretch: 112%; font-size: 17px; }
+.hotel-txt address { font-style: normal; font-size: 13px; color: var(--muted); }
+.steps { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 8px 0 0; }
+.steps li { font-size: 13px; background: var(--chip); border-radius: 6px; padding: 3px 9px; }
+.steps li + li::before { content: "→ "; color: var(--muted); }
+.home { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; background: #1c3145; color: #fff; border-radius: 10px; padding: 16px 18px; margin-bottom: 8px; }
+.home-ico { width: 30px; height: 30px; flex: none; fill: none; stroke: #f6ddc6; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.home-txt { flex: 1 1 220px; min-width: 0; }
+.home-txt span, .home-time span { display: block; font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: #eac1a4; }
+.home-txt strong { display: block; font: 700 22px var(--f-display); font-stretch: 112%; margin: 2px 0; }
+.home-txt p { margin: 0; font-size: 13px; color: #dfe7ea; }
+.home-txt address { font-style: normal; font-size: 12px; color: #f3e5d7; margin-top: 4px; }
+.home-txt a { display: inline-block; margin-top: 6px; color: #f6c9a6; font-size: 13px; font-weight: 600; text-underline-offset: 3px; }
+.home-time b { font: 700 28px var(--f-display); }
+.alerts:first-child { margin-top: 0; }
+</style></head><body>
+<header class="top"><div class="top-in">
+  <p class="trip">Roteiro da viagem · 9 a 19 de novembro de 2026</p>
+  <div class="cities" role="tablist" id="cities" aria-label="Cidades"></div>
+</div></header>
+<div class="wrap">
+  <div id="head"></div>
+  <div class="tabs" role="tablist" id="tabs" aria-label="Dias"></div>
+  <div id="day"></div>
+  <p class="foot">Horários e janelas de visita vêm do roteiro original. Confirme ingressos e horários de funcionamento no site de cada lugar antes de ir.</p>
+</div>
+<script>
+var WALK = 'walk', BUS = 'transit';
+function w(min, m, o) { return Object.assign({ mode: WALK, min: min, m: m }, o || {}); }
+function t(min, m) { return { mode: BUS, min: min, m: m }; }
+function m(min, mt) { return { mode: BUS, min: min, m: mt, approx: true }; }
+var A = { approx: true };
+function fd(name, type, lat, lng, q, note) { return { name: name, type: type, c: [lat, lng], q: q, note: note }; }
+function ex(name, tag, lat, lng, q, note) { return { name: name, tag: tag, c: [lat, lng], q: q, note: note }; }
+
+var MODE_METRO = { leg: 'metrô', facts: 'de metrô', legend: 'metrô', alt: 'De metrô', title: '🚇 Como ir de metrô' };
+
+var CITIES = [];
+
+/* ================= MADRID ================= */
+var MAD_HOSTEL = 'Art Seven Hostel';
+var MAD_HOSTEL_C = [40.41336, -3.70389];
+/* Onde comer: lista única para Madrid (dias 9–11 e a volta, 18–19). A letra de cada lugar é fixa; a ordem na tela segue a distância do roteiro do dia ou da sua localização. */
+var MAD_FOOD = [
+  fd('Chocolatería San Ginés', 'doce', 40.41677, -3.7068, 'Chocolatería San Ginés, Pasadizo de San Ginés 5, Madrid', 'Churros com chocolate, um clássico desde 1894.'),
+  fd('Museo del Jamón · Plaza Mayor', 'tapas', 40.41538, -3.70815, 'Museo del Jamón, Plaza Mayor 18, Madrid', 'Bocadillos de jamón baratos. Há outras unidades pelo centro.'),
+  fd('Five Guys · Plaza Mayor', 'rapido', 40.4139, -3.7072, 'Five Guys, Calle de Toledo 19, Madrid', 'Hambúrguer e batata frita.'),
+  fd('Mercado de San Miguel', 'mercado', 40.41541, -3.70897, 'Mercado de San Miguel, Madrid', 'Petiscos variados. Bonito, mas turístico e mais caro.'),
+  fd('Antonia Pizza · Arenal', 'rapido', 40.41732, -3.70582, 'Antonia Pizza, Calle del Arenal 12, Madrid', 'Pizzaria entre Sol e a Ópera.'),
+  fd('Mercado de San Fernando', 'mercado', 40.40767, -3.70367, 'Mercado de San Fernando, Calle de Embajadores 41, Madrid', 'Mercado de bairro em Lavapiés, mais local. Perto do hostel.'),
+  fd('El Tigre', 'tapas', 40.42031, -3.69852, 'El Tigre, Calle de las Infantas, Madrid', 'Pediu bebida, ganha uma tapa grande. Costuma lotar.'),
+  fd('100 Montaditos · Príncipe', 'tapas', 40.4152, -3.69985, '100 Montaditos, Calle del Príncipe 18, Madrid', 'Minissanduíches e cerveja baratos.'),
+  fd('El Príncipe', 'rest', 40.41627, -3.70051, 'Restaurante El Príncipe, Plaza de Canalejas 5, Madrid', 'Parrilla argentina. Confira se é o El Príncipe que você queria.'),
+  fd('Hundred Burger · Chueca', 'rapido', 40.42104, -3.69985, 'Hundred, Plaza de Pedro Zerolo 1, Madrid', 'Sua anotação: “o melhor do mundo”.'),
+  fd("McDonald's · Gran Vía", 'rapido', 40.42159, -3.7084, "McDonald's, Gran Vía 55, Madrid", ''),
+  fd('TKO Tacos · Gran Vía', 'rapido', 40.42155, -3.70832, 'TKO Tacos, Gran Vía 53, Madrid', 'Tacos.'),
+  fd('99 Cheesecake', 'doce', 40.42451, -3.70245, '99 Cheesecake, Calle de Don Felipe 4, Madrid', 'Cheesecakes, em Malasaña.'),
+  fd('Café Cibeles by Azotea', 'doce', 40.41893, -3.69205, 'Café Cibeles Azotea, Palacio de Cibeles, Madrid', 'Local aproximado: no Palacio de Cibeles.'),
+  fd('Pollo Rico', 'rest', 40.4162, -3.67778, 'Pollo Rico, Avenida de Menéndez Pelayo, Madrid', 'Perto da saída leste do Retiro.'),
+  fd('La Taberna de Peñalver', 'rest', 40.43367, -3.67479, 'La Taberna de Peñalver, Calle del Conde de Peñalver 90, Madrid', 'Paella. Fica em Salamanca, a uns 2 km do Retiro.'),
+  fd('Paellitas Tradición · Bernabéu', 'rest', 40.45612, -3.69395, 'Paellitas Tradición, Calle de San Germán 11, Madrid', 'Paella, a uns 700 m do estádio.'),
+  fd('Mahou · perto do Bernabéu', 'tapas', 40.45255, -3.68718, 'Plaza Mahou, Madrid', 'Local aproximado, ao lado do estádio.'),
+  fd('Mercadona · Ronda de Atocha', 'super', 40.40634, -3.69842, 'Mercadona, Ronda de Atocha 26, Madrid', 'O mais perto do hostel.'),
+  fd('Mercadona · Fuencarral', 'super', 40.42512, -3.70117, 'Mercadona, Calle de Fuencarral 77, Madrid', ''),
+  fd('Mercadona · Retiro', 'super', 40.40908, -3.67612, 'Mercadona, Plaza Reyes Magos, Madrid', ''),
+  fd('Mercadona · Bernabéu', 'super', 40.45472, -3.6873, 'Mercadona, Calle del Padre Damián, Madrid', '')
+];
+
+CITIES.push((function () {
+  var H = MAD_HOSTEL;
+  var CURTO = { walk: true, txt: 'Trecho curto: a pé é mais rápido que o metrô.' };
+  return {
+    id: 'madrid', tab: 'Madrid', short: '9–12 nov', suffix: 'Madrid',
+    kicker: '9 a 11 de novembro de 2026', title: 'Madrid em três dias',
+    base: 'Base no Art Seven Hostel, a 1 min do metrô Tirso de Molina. Cada dia fica numa região da cidade. Distâncias a pé calculadas pelo OpenStreetMap; trechos de metrô e ônibus são estimativas (≈).',
+    mode: { leg: 'transporte público', facts: 'de transporte', legend: 'transporte público', alt: 'De metrô', title: '🚇 Como ir de metrô',
+      note: 'Linhas e estações do Metro de Madrid e ônibus da EMT. Confira no link de cada trecho se há alguma interrupção no dia.' },
+    CURTO: CURTO,
+    FOOD: MAD_FOOD, foodRef: H,
+    Q: {
+      'Art Seven Hostel': 'Art Seven Hostel Capsules, Calle del Conde de Romanones 7, 28012 Madrid',
+      'Puerta del Sol': 'Puerta del Sol, Madrid',
+      'Calle de Preciados': 'Calle de Preciados 26, 28013 Madrid',
+      'Mirante do El Corte Inglés Callao': 'El Corte Inglés, Plaza de Callao 2, Madrid',
+      'Plaza Mayor': 'Plaza Mayor, Madrid',
+      'Arco de Cuchilleros': 'Arco de Cuchilleros, Madrid',
+      'Mercado de San Miguel': 'Mercado de San Miguel, Madrid',
+      'Plaza de la Villa': 'Plaza de la Villa, Madrid',
+      'Plaza de Santa Ana': 'Plaza de Santa Ana, Madrid',
+      'Plaza de Oriente': 'Plaza de Oriente, Madrid',
+      'Palácio Real de Madrid': 'Palacio Real de Madrid',
+      'Catedral de la Almudena': 'Catedral de la Almudena, Madrid',
+      'Jardines de Sabatini': 'Jardines de Sabatini, Madrid',
+      'Plaza de España': 'Plaza de España, Madrid',
+      'Edificio Metrópolis': 'Edificio Metrópolis, Calle de Alcalá 39, Madrid',
+      '360º Rooftop Bar': '360º Rooftop Bar, Hotel Riu Plaza España, Madrid',
+      'Templo de Debod': 'Templo de Debod, Madrid',
+      'Gran Vía': 'Plaza del Callao, Madrid',
+      '100 Montaditos Madrid Príncipe': '100 Montaditos, Calle del Príncipe 18, Madrid',
+      'Chocolatería San Ginés': 'Chocolatería San Ginés, Pasadizo de San Ginés 5, Madrid',
+      'Bernabéu': 'Estadio Santiago Bernabéu, Madrid',
+      'Plaza de Colón': 'Plaza de Colón, Madrid',
+      'Fuente de Cibeles': 'Fuente de Cibeles, Madrid',
+      'Palacio de Cibeles': 'Palacio de Cibeles, Madrid',
+      'Puerta de Alcalá': 'Puerta de Alcalá, Madrid',
+      'Estanque Grande del Retiro': 'Monumento a Alfonso XII, Parque del Retiro, Madrid',
+      'Palacio de Velázquez': 'Palacio de Velázquez, Parque del Retiro, Madrid',
+      'Palacio de Cristal': 'Palacio de Cristal, Parque del Retiro, Madrid',
+      'Real Jardín Botánico': 'Real Jardín Botánico, Madrid',
+      'Jardim vertical do CaixaForum': 'CaixaForum Madrid, Paseo del Prado 36, Madrid',
+      'Museo del Prado': 'Museo del Prado, Madrid',
+      'Calle de la Cava Baja': 'Calle de la Cava Baja, Madrid'
+    },
+    COORD: {
+      'Art Seven Hostel': MAD_HOSTEL_C,
+      'Puerta del Sol': [40.41689, -3.70345],
+      'Calle de Preciados': [40.41890, -3.70565],
+      'Mirante do El Corte Inglés Callao': [40.4196, -3.70511],
+      'Plaza Mayor': [40.41553, -3.70742],
+      'Arco de Cuchilleros': [40.4149, -3.70803],
+      'Mercado de San Miguel': [40.41541, -3.70897],
+      'Plaza de la Villa': [40.41522, -3.7104],
+      'Plaza de Santa Ana': [40.4148, -3.70079],
+      'Plaza de Oriente': [40.41835, -3.71217],
+      'Palácio Real de Madrid': [40.41794, -3.71431],
+      'Catedral de la Almudena': [40.41571, -3.71459],
+      'Jardines de Sabatini': [40.42056, -3.71398],
+      'Plaza de España': [40.42318, -3.71261],
+      'Edificio Metrópolis': [40.41877, -3.69739],
+      '360º Rooftop Bar': [40.42356, -3.71233],
+      'Templo de Debod': [40.42400, -3.71782],
+      'Gran Vía': [40.42008, -3.70588],
+      '100 Montaditos Madrid Príncipe': [40.41520, -3.69985],
+      'Chocolatería San Ginés': [40.41677, -3.7068],
+      'Bernabéu': [40.45306, -3.68835],
+      'Plaza de Colón': [40.42535, -3.69051],
+      'Fuente de Cibeles': [40.41936, -3.69313],
+      'Palacio de Cibeles': [40.41893, -3.69205],
+      'Puerta de Alcalá': [40.41998, -3.68873],
+      'Estanque Grande del Retiro': [40.41731, -3.68307],
+      'Palacio de Velázquez': [40.4152, -3.68198],
+      'Palacio de Cristal': [40.4136, -3.68206],
+      'Real Jardín Botánico': [40.41190, -3.69160],
+      'Jardim vertical do CaixaForum': [40.41108, -3.69317],
+      'Museo del Prado': [40.41378, -3.69212],
+      'Calle de la Cava Baja': [40.41236, -3.70925]
+    },
+    LINE_COLOR: { L1: '#38A3DC', L10: '#005AA9', '27': '#1B4F9C' },
+    DARK_TEXT: { L1: 1 },
+    METRO: {
+      'dia-1': [CURTO, CURTO,
+        { walk: true, txt: 'O prédio principal do El Corte Inglés fica no fim da Preciados, na Plaza de Callao. Suba até o último andar.' },
+        { walk: true, txt: 'A pé, voltando pela Preciados e pela Calle Mayor (≈ 8 min).' },
+        { walk: true, txt: 'O arco fica no canto sudoeste da praça: desça a escadaria (≈ 4 min).' },
+        { walk: true, txt: 'Pela Cava de San Miguel, o mercado fica logo acima (≈ 2 min).' },
+        { walk: true, txt: 'A pé pela Calle Mayor (≈ 2 min).' },
+        { walk: true, txt: 'A pé pela Calle Mayor e Calle de Atocha, ou pela Puerta del Sol (≈ 13 min).' },
+        { walk: true, txt: 'A pé pela Calle de las Huertas, no Barrio de las Letras (≈ 5 min).' }
+      ],
+      'dia-2': [
+        { walk: true, txt: 'A pé (≈ 14 min) pela Calle del Arenal até a Plaza de Oriente. De metrô não compensa: precisaria trocar de linha em Sol.' },
+        { walk: true, txt: 'A entrada do palácio fica na Plaza de la Armería, contornando pelo lado sul (≈ 2 min).' },
+        { walk: true, txt: 'A catedral fica do outro lado da Plaza de la Armería (≈ 4 min).' },
+        { walk: true, txt: 'A pé pela Calle de Bailén, contornando o palácio (≈ 9 min).' },
+        CURTO,
+        { walk: true, txt: 'O hotel do terraço fica na própria praça (≈ 2 min).' },
+        { walk: true, txt: 'A pé, atravessando a Calle de Ferraz até o parque do templo (≈ 7 min).' },
+        { walk: true, txt: 'A pé, voltando à Plaza de España e descendo a Gran Vía até Callao (≈ 16 min).' },
+        { walk: true, txt: 'A pé pela Gran Vía até o encontro com a Calle de Alcalá (≈ 10 min).' },
+        { walk: true, txt: 'A pé pela Calle de Sevilla até a Calle del Príncipe (≈ 9 min).' },
+        CURTO
+      ],
+      'dia-3': [
+        { walk: true, txt: 'A pé (≈ 7 min) por Sol e pela Calle del Arenal.' },
+        { pre: 'Volte a pé até a estação Sol (≈ 4 min).',
+          rides: [['L1', 'Sol', 'Tribunal', 2, 'sentido Pinar de Chamartín'], ['L10', 'Tribunal', 'Nuevos Ministerios', 3, 'sentido Nuevos Ministerios']],
+          post: 'A L10 está fechada depois de Nuevos Ministerios. Dali são 14 min a pé subindo a Castellana até o estádio, ou o ônibus S10, gratuito com o bilhete do metrô.' },
+        { pre: 'Ponto de ônibus na Castellana, em frente ao estádio.',
+          rides: [['27', 'Bernabéu', 'Colón', null, 'ônibus EMT sentido Embajadores, ≈ 15–20 min']],
+          post: 'Se não quiser parar em Colón, siga no mesmo ônibus até Cibeles. O bilhete de 10 viagens do metrô também vale no ônibus. Confira o ponto no link do trecho.' },
+        { walk: true, txt: 'A pé pelo Paseo de Recoletos até Cibeles (≈ 12 min).' },
+        CURTO, CURTO,
+        { walk: true, txt: 'A pé: entre no Retiro pela Puerta de la Independencia, ao lado da Puerta de Alcalá, e siga até o Estanque Grande (≈ 10 min).' },
+        { walk: true, txt: 'A pé, seguindo para o sul pelo parque (≈ 4 min).' },
+        { walk: true, txt: 'O Palacio de Cristal fica logo ao lado (≈ 3 min).' },
+        { walk: true, txt: 'A pé (≈ 15 min): saia do Retiro pelo lado do Prado e siga até a entrada do Botânico, na Plaza de Murillo.' },
+        { walk: true, txt: 'A pé pelo Paseo del Prado, sentido Atocha (≈ 5 min).' },
+        { walk: true, txt: 'A pé, voltando pelo Paseo del Prado até a entrada do museu (≈ 5 min).' },
+        { walk: true, txt: 'A pé (≈ 22 min) pelo Barrio de las Letras e pela Plaza Mayor. De metrô: L1 de Estación del Arte a Tirso de Molina e mais ≈ 9 min a pé.' },
+        { walk: true, txt: 'A pé de volta ao hostel (≈ 8 min).' }
+      ]
+    },
+    DAYS: [
+      {
+        id: 'dia-1', cls: 'd1', tab: 'Seg 9/11', title: 'Segunda, 9 de novembro · Centro',
+        legs: [w(5, 410), w(4, 310), w(2, 130), w(8, 610), w(4, 350), w(2, 160), w(2, 180), w(13, 1030)],
+        origin: { name: H, tag: 'Check-in 15h · saída ~15h30', note: 'Do aeroporto ao hostel é cerca de 1 h de metrô (veja o guia na aba Hotel e traslados). Chegando por volta das 13h30–14h, deixe as malas na recepção e almoce por perto.' },
+        stops: [
+          { name: 'Puerta del Sol', tag: 'Praça · Km 0', win: '15h40–16h', note: 'O marco do Km 0 fica na calçada em frente à Real Casa de Correos. Ali perto está a estátua do Urso e do Medronheiro.' },
+          { name: 'Calle de Preciados', tag: 'Rua de compras', win: '16h–17h', note: 'Rua de pedestres entre Sol e Callao, cheia de lojas.' },
+          { name: 'Mirante do El Corte Inglés Callao', tag: 'Mirante · pôr do sol', hours: 'Grátis', win: '17h05–17h40', note: 'No último andar fica a área gastronômica, com terraço e vista da Gran Vía. O sol se põe por volta das 18h.' },
+          { name: 'Plaza Mayor', tag: 'Praça', hours: 'Aberto 24 horas', win: '17h50–18h20', note: 'Chegando já ao anoitecer, com a praça iluminada.' },
+          { name: 'Arco de Cuchilleros', tag: 'Arco · escadaria', hours: 'Aberto 24 horas', win: '18h25', note: 'A escadaria de pedra que sai da Plaza Mayor. Vale a foto de baixo para cima.' },
+          { name: 'Mercado de San Miguel', tag: 'Mercado · petiscos', hours: 'Aberto 10:00–0:00', win: '18h30–19h45', note: 'Petiscos e jantar leve.' },
+          { name: 'Plaza de la Villa', tag: 'Praça histórica', hours: 'Aberto 24 horas', win: '19h50–20h05', note: 'A praça mais antiga de Madrid, com a antiga prefeitura e a Torre de los Lujanes.' },
+          { name: 'Plaza de Santa Ana', tag: 'Praça · Barrio de las Letras', hours: 'Aberto 24 horas', win: '20h20–21h', note: 'Bares e terraços para uma bebida. No caminho, procure as citações de escritores gravadas no chão da Calle de las Huertas.' }
+        ],
+        end: { name: H, leg: w(5, 400), note: 'Volta a pé para o hostel. A Chocolatería San Ginés (veja “Onde comer”) é uma boa sobremesa antes.' },
+        alerts: [
+          { t: 'Primeiro dia leve', x: 'O voo chega às 12h00 e o check-in é às 15h00. O passeio começa depois do check-in, todo a pé e perto do hostel.' }
+        ]
+      },
+      {
+        id: 'dia-2', cls: 'd2', tab: 'Ter 10/11', title: 'Terça, 10 de novembro · Palácio e Gran Vía',
+        legs: [w(14, 1160), w(2, 160), w(4, 320), w(9, 700), w(4, 350), w(2, 120), w(7, 550), w(16, 1320), w(10, 830), w(9, 740)],
+        origin: { name: H, tag: 'Partida · ~9h30' },
+        stops: [
+          { name: 'Plaza de Oriente', tag: 'Praça', hours: 'Aberto 24 horas', win: '9h45–10h', note: 'Praça entre o Palácio Real e o Teatro Real, com estátuas de reis espanhóis.' },
+          { name: 'Palácio Real de Madrid', tag: 'Palácio', hours: 'Aberto 10:00–18:00', win: '10h–11h45', note: 'Compre o ingresso com horário no site do Patrimonio Nacional.' },
+          { name: 'Catedral de la Almudena', tag: 'Catedral', hours: 'Entrada gratuita', win: '11h50–12h30', note: 'Em frente ao palácio. A cúpula e o museu são pagos à parte.' },
+          { name: 'Jardines de Sabatini', tag: 'Jardim', hours: 'Grátis', win: '12h40–13h', note: 'Jardins franceses ao lado do palácio, com vista da fachada norte.' },
+          { name: 'Plaza de España', tag: 'Praça · almoço', win: '13h05–14h30', note: 'Monumento a Cervantes, com Dom Quixote e Sancho Pança. Almoce por aqui antes de subir no terraço.' },
+          { name: '360º Rooftop Bar', tag: 'Terraço · vista', hours: 'Aberto 11:00–1:00', win: '14h30–15h45', note: 'No alto do Hotel Riu, na Plaza de España. Vista de 360° da cidade.' },
+          { name: 'Templo de Debod', tag: 'Templo egípcio · pôr do sol', hours: 'Aberto 10:00–20:00 · fechado seg', win: '16h–18h15', note: 'Dá para caminhar pelo Parque del Oeste, ao lado, antes do pôr do sol, por volta das 18h. O mirante junto ao templo é o melhor lugar para ver.' },
+          { name: 'Gran Vía', tag: 'Avenida · compras', win: '18h30–19h30', note: 'Desça a pé da Plaza de España até Callao: prédios históricos, lojas e as luzes dos teatros.' },
+          { name: 'Edificio Metrópolis', tag: 'Prédio histórico', hours: 'Fachada · grátis', win: '19h40–19h50', note: 'O começo da Gran Vía, com a cúpula e a estátua alada. Fica bonito iluminado.' },
+          { name: '100 Montaditos Madrid Príncipe', tag: 'Bar de cervejas · jantar', hours: 'Aberto 10:00–0:00', win: '~20h', note: 'Jantar no horário espanhol. Se preferir outro lugar, veja “Onde comer”.' }
+        ],
+        end: { name: H, leg: w(6, 460) },
+        alerts: [
+          { t: 'Palácio Real', x: 'O palácio pode fechar sem aviso para atos oficiais. Confira no site do Patrimonio Nacional na véspera.' }
+        ]
+      },
+      {
+        id: 'dia-3', cls: 'd3', tab: 'Qua 11/11', title: 'Quarta, 11 de novembro · Bernabéu e Prado',
+        legs: [w(7, 590), { mode: BUS, min: 35, m: 6000, approx: true }, { mode: BUS, min: 20, m: 3320, approx: true }, w(12, 970), w(3, 260), w(7, 530), w(10, 800), w(4, 330), w(3, 240), w(15, 1180), w(5, 400), w(5, 430), w(22, 1800)],
+        origin: { name: H, tag: 'Partida · ~9h05' },
+        stops: [
+          { name: 'Chocolatería San Ginés', tag: 'Café da manhã · churros', win: '9h15–10h', note: 'Churros com chocolate antes do estádio. A estação Sol fica a 4 min.' },
+          { name: 'Bernabéu', tag: 'Estádio · tour', win: '11h–12h45', note: 'Tour marcado para as 11h. Chegue uns 15 min antes. Almoço perto do estádio (veja “Onde comer”).' },
+          { name: 'Plaza de Colón', tag: 'Praça · opcional', hours: 'Aberto 24 horas', win: '14h–14h10', note: 'Desça do ônibus para ver a praça e a fachada da Biblioteca Nacional, e siga a pé pelo Paseo de Recoletos.' },
+          { name: 'Fuente de Cibeles', tag: 'Praça · fonte', win: '14h25–14h35', note: 'Fotos da fonte e da praça.' },
+          { name: 'Palacio de Cibeles', tag: 'Prefeitura · mirante', win: '14h35–15h10', note: 'O mirante no alto do prédio tem vista da praça e é pago à parte.' },
+          { name: 'Puerta de Alcalá', tag: 'Monumento', hours: 'Aberto 24 horas', win: '15h20' },
+          { name: 'Estanque Grande del Retiro', tag: 'Parque · lago', hours: 'Parque aberto 6:00–22:00 no inverno', win: '15h30–16h', note: 'O lago dos barcos do Retiro, com o Monumento a Alfonso XII ao fundo.' },
+          { name: 'Palacio de Velázquez', tag: 'Exposições · grátis', win: '16h05–16h25', note: 'Exposições temporárias do Museo Reina Sofía. Confira no site do museu se há exposição aberta.' },
+          { name: 'Palacio de Cristal', tag: 'Pavilhão de vidro · só por fora', win: '16h30–16h50', note: 'Fechado para restauração até 2027. Por fora, está coberto pela instalação “Fardo”, de Andrea Canepa, e o lago em frente continua aberto.' },
+          { name: 'Real Jardín Botánico', tag: 'Jardim botânico · opcional', hours: 'Em novembro fecha às 18:00', win: '17h05–17h30', note: 'Só se sobrar tempo: o Prado é a prioridade.' },
+          { name: 'Jardim vertical do CaixaForum', tag: 'Muro de plantas · opcional', hours: 'Ao ar livre', win: '17h35–17h40', note: 'O muro coberto de plantas ao lado do CaixaForum. Foto rápida antes da fila do Prado.' },
+          { name: 'Museo del Prado', tag: 'Museu de arte · grátis', hours: 'Aberto 10:00–20:00', win: '18h–20h', note: 'Entrada gratuita de segunda a sábado, das 18h às 20h. Chegue por volta das 17h45, porque forma fila. Escolha 2 ou 3 salas principais.' },
+          { name: 'Calle de la Cava Baja', tag: 'Rua de tapas · jantar', win: '20h25–22h', note: 'Rua de bares e tabernas em La Latina. Vá de bar em bar, com uma tapa e uma bebida em cada.' }
+        ],
+        end: { name: H, leg: w(8, 650), note: 'Volta a pé para o hostel.' },
+        alerts: [
+          { t: 'Linha 10 fechada até o Bernabéu', x: 'Por obras na estação Santiago Bernabéu, a L10 está interrompida entre Nuevos Ministerios e Cuzco até o fim de 2026. Vá de metrô até Nuevos Ministerios e caminhe 14 min, ou pegue o ônibus S10, sem custo extra para quem tem bilhete de metrô. Confira no site do Metro de Madrid se o trecho já reabriu.' },
+          { t: 'Prado de graça', x: 'A entrada gratuita no fim do dia é muito procurada. Se quiser garantir, o ingresso pago com horário marcado é vendido no site do museu.' }
+        ]
+      }
+    ]
+  };
+})());
+
+/* ================= PARIS ================= */
+CITIES.push((function () {
+  var HOTEL = 'Hôtel France Eiffel';
+  var ORLY = 'Aeroporto de Orly';
+  var CURTO = { walk: true, txt: 'Trecho curto: a pé é mais rápido que o metrô.' };
+  var LMP_POST = 'De La Motte-Picquet–Grenelle, ~9 min a pé até o hotel.';
+  return {
+    id: 'paris', tab: 'Paris', short: '12–13 nov', suffix: 'Paris',
+    kicker: '12 e 13 de novembro de 2026', title: 'Paris em dois dias',
+    base: 'Base no Hôtel France Eiffel, a 15 min a pé da Torre Eiffel. Chegada e volta por Orly. Distâncias a pé calculadas pelo OpenStreetMap; trechos de metrô são estimativas (≈).',
+    mode: Object.assign({}, MODE_METRO, { note: 'Linhas e estações do metrô de Paris (RATP). Confira no link de cada trecho se há alguma interrupção no dia.' }),
+    CURTO: CURTO,
+    FOOD: [
+      fd('Carrefour City · Rue Saint-Charles', 'super', 48.85237, 2.29027, 'Carrefour City, Rue Saint-Charles, Paris 15e', 'Ao lado do hotel.'),
+      fd('Monoprix · Boulevard de Grenelle', 'super', 48.84893, 2.29751, 'Monoprix, Boulevard de Grenelle, Paris 15e', 'Perto do metrô La Motte-Picquet–Grenelle.'),
+      fd('Rue du Commerce', 'rest', 48.84808, 2.29681, 'Rue du Commerce, Paris 15e', 'Rua do bairro do hotel, com cafés, padarias e restaurantes.'),
+      fd('Rue Cler', 'mercado', 48.85658, 2.30651, 'Rue Cler, Paris 7e', 'Rua de pedestres com feira e lojas de comida, perto da Torre Eiffel.'),
+      fd('Franprix · Rue de Grenelle', 'super', 48.85764, 2.30614, 'Franprix, Rue de Grenelle, Paris 7e', 'Perto da Torre Eiffel e da Rue Cler.'),
+      fd('Picard · Panthéon', 'super', 48.84678, 2.34698, 'Picard, Rue de la Montagne Sainte-Geneviève, Paris 5e', 'Comida congelada pronta, as marmitas. Ao lado do Panthéon.'),
+      fd("Café Lucy · Musée de l'Homme", 'doce', 48.86205, 2.28765, "Musée de l'Homme, Place du Trocadéro, Paris", 'Café do museu, com vista da torre. Segue o horário do museu: confira antes.'),
+      fd('Angelina · Rivoli', 'doce', 48.86508, 2.32841, 'Angelina, 226 Rue de Rivoli, Paris', 'O chocolate quente mais famoso de Paris, em frente ao Jardin des Tuileries. Costuma ter fila.'),
+      fd('Bouillon Pigalle', 'rest', 48.88262, 2.33741, 'Bouillon Pigalle, 22 Boulevard de Clichy, Paris', 'Cozinha francesa clássica a preço baixo, perto de Montmartre. Costuma ter fila.'),
+      fd('Brasserie Rosie', 'rest', 48.8522, 2.37304, 'Rosie, 53 Rue du Faubourg Saint-Antoine, Paris', 'Brasserie ao lado da Place de la Bastille.'),
+      fd('Le Nesle', 'doce', 48.85514, 2.33951, 'Le Nesle, Rue de Nesle, Paris 6e', 'Famoso pelo bolo Matilda, de chocolate. No roteiro do dia 13.'),
+      fd('Ladurée · Champs-Élysées', 'doce', 48.87082, 2.30317, 'Ladurée, 75 Avenue des Champs-Élysées, Paris', 'Macarons e salão de chá clássico.'),
+      fd("McDonald's · Champs-Élysées", 'rapido', 48.87145, 2.3041, "McDonald's, Avenue des Champs-Élysées, Paris", ''),
+      fd("Le Relais de l'Entrecôte", 'rest', 48.86816, 2.30278, "Le Relais de l'Entrecôte, 15 Rue Marbeuf, Paris", 'Prato único: entrecôte com batata frita. Não aceita reserva e costuma ter fila.'),
+      fd('Café de la Paix', 'doce', 48.87077, 2.3317, 'Café de la Paix, Place de l\'Opéra, Paris', 'Café histórico em frente à Ópera. Caro, mas clássico.')
+    ],
+    foodRef: HOTEL,
+    Q: {
+      'Hôtel France Eiffel': 'Hôtel France Eiffel, 8 Rue Saint-Charles, 75015 Paris',
+      'Aeroporto de Orly': 'Aéroport de Paris-Orly',
+      'Museu do Louvre': 'Pyramide du Louvre, Paris',
+      'Galeries Lafayette': 'Galeries Lafayette Haussmann, Paris',
+      'Ópera Garnier': 'Palais Garnier, Paris',
+      'Igreja da Madeleine': 'Église de la Madeleine, Paris',
+      'Place de la Concorde': 'Place de la Concorde, Paris',
+      'Pont Alexandre III': 'Pont Alexandre III, Paris',
+      'Champs-Élysées': 'Avenue des Champs-Élysées, Paris',
+      'Arco do Triunfo': 'Arc de Triomphe, Paris',
+      'Trocadéro': 'Esplanade du Trocadéro, Paris',
+      'Avenue de Camoëns': 'Avenue de Camoëns, Paris',
+      'Pont de Bir-Hakeim': 'Pont de Bir-Hakeim, Paris',
+      'Rue de Buenos Aires': 'Rue de Buenos Aires, Paris 7e',
+      'Torre Eiffel': 'Tour Eiffel, Paris',
+      "Rue de l'Université": "Rue de l'Université, Paris 7e",
+      'Champ de Mars': 'Champ de Mars, Paris',
+      'Parc des Princes': 'Parc des Princes, Paris',
+      'Notre-Dame': 'Cathédrale Notre-Dame de Paris',
+      'Le Nesle': 'Le Nesle, Rue de Nesle, 75006 Paris',
+      'Jardin du Luxembourg': 'Jardin du Luxembourg, Paris',
+      'Panthéon': 'Panthéon, Paris'
+    },
+    COORD: {
+      'Hôtel France Eiffel': [48.8516, 2.28962],
+      'Museu do Louvre': [48.86099, 2.33584],
+      'Galeries Lafayette': [48.87365, 2.33213],
+      'Ópera Garnier': [48.87143, 2.33197],
+      'Igreja da Madeleine': [48.87013, 2.32454],
+      'Place de la Concorde': [48.86557, 2.32122],
+      'Pont Alexandre III': [48.86347, 2.31352],
+      'Champs-Élysées': [48.8698, 2.3076],
+      'Arco do Triunfo': [48.87378, 2.29504],
+      'Trocadéro': [48.8616, 2.2893],
+      'Avenue de Camoëns': [48.85967, 2.28618],
+      'Pont de Bir-Hakeim': [48.85573, 2.28755],
+      'Rue de Buenos Aires': [48.85708, 2.29216],
+      'Torre Eiffel': [48.85826, 2.2945],
+      "Rue de l'Université": [48.85972, 2.29629],
+      'Champ de Mars': [48.85614, 2.29782],
+      'Parc des Princes': [48.84136, 2.25307],
+      'Notre-Dame': [48.85294, 2.35005],
+      'Le Nesle': [48.85514, 2.33951],
+      'Jardin du Luxembourg': [48.84672, 2.33641],
+      'Panthéon': [48.84619, 2.34605]
+    },
+    LINE_COLOR: { L1: '#FFCD00', L8: '#E19BDF', L10: '#E3B32A', L14: '#62259D' },
+    DARK_TEXT: { L1: 1, L8: 1, L10: 1 },
+    METRO: {
+      'dia-12': [
+        { pre: 'A estação Aéroport d’Orly fica entre os terminais. Compre o bilhete do aeroporto na máquina.',
+          rides: [['L14', "Aéroport d'Orly", 'Madeleine', null, 'sentido Saint-Denis Pleyel, ≈ 30 min'], ['L8', 'Madeleine', 'La Motte-Picquet–Grenelle', 5, 'sentido Balard']],
+          post: LMP_POST },
+        { pre: 'A estação La Motte-Picquet–Grenelle fica a ~9 min a pé do hotel.',
+          rides: [['L8', 'La Motte-Picquet–Grenelle', 'Concorde', 4, 'sentido Pointe du Lac'], ['L1', 'Concorde', 'Palais Royal–Musée du Louvre', 2, 'sentido Château de Vincennes']],
+          post: 'A estação tem saída direta para o museu, pelo Carrousel du Louvre.' },
+        { walk: true, txt: 'A pé pela Avenue de l’Opéra até a Galeries Lafayette, atrás da Ópera (≈ 20 min).' },
+        { walk: true, txt: 'A Ópera Garnier fica a 4 min a pé.' },
+        { walk: true, txt: 'A pé pelo Boulevard des Capucines até a Madeleine (≈ 9 min).' },
+        { walk: true, txt: 'A pé pela Rue Royale até a praça (≈ 8 min).' },
+        { walk: true, txt: 'A pé pela margem do Sena até a ponte (≈ 10 min).' },
+        { walk: true, txt: 'A pé pela Avenue Winston Churchill, entre o Grand Palais e o Petit Palais, até a Champs-Élysées (≈ 13 min).' },
+        { walk: true, txt: 'A pé, subindo a Champs-Élysées até o Arco (≈ 14 min).' },
+        { walk: true, txt: 'A pé pela Avenue Kléber até a Avenue de Camoëns, logo depois do Trocadéro (≈ 25 min). A linha 6, que faria esse trecho, está em obras.' },
+        { walk: true, txt: 'A pé de volta à esplanada do Trocadéro (≈ 6 min).' },
+        { walk: true, txt: 'A pé, descendo até o Sena (≈ 11 min).' },
+        { walk: true, txt: 'A pé pelo Quai Branly até a Rue de Buenos Aires (≈ 9 min).' },
+        { walk: true, txt: 'A torre fica no fim da rua (≈ 4 min).' },
+        { walk: true, txt: 'A pé, contornando a torre pelo lado leste (≈ 3 min).' },
+        { walk: true, txt: 'A pé pela Avenue de la Bourdonnais até o Champ de Mars (≈ 7 min).' },
+        { walk: true, txt: 'A pé de volta ao hotel (≈ 11 min).' }
+      ],
+      'dia-13': [
+        { pre: 'A estação La Motte-Picquet–Grenelle fica a ~9 min a pé do hotel.',
+          rides: [['L10', 'La Motte-Picquet–Grenelle', "Porte d'Auteuil", 6, 'sentido Boulogne–Pont de Saint-Cloud']],
+          post: 'De Porte d’Auteuil, ~12 min a pé até o Parc des Princes.' },
+        { pre: 'A estação Michel-Ange–Molitor fica a ~10 min a pé do estádio.',
+          rides: [['L10', 'Michel-Ange–Molitor', 'Cluny–La Sorbonne', 13, "sentido Gare d'Austerlitz"]],
+          post: 'De Cluny–La Sorbonne, ~8 min a pé até a catedral, atravessando para a Île de la Cité.' },
+        { walk: true, txt: 'A pé pela margem do Sena até a Rue de Nesle (≈ 13 min).' },
+        { walk: true, txt: 'A pé pela Rue de Seine e Rue de Tournon até o jardim (≈ 14 min).' },
+        { walk: true, txt: 'A pé pela Rue Soufflot até o Panthéon (≈ 12 min).' },
+        { pre: 'A estação Cardinal Lemoine fica a ~10 min a pé do Panthéon.',
+          rides: [['L10', 'Cardinal Lemoine', 'La Motte-Picquet–Grenelle', 9, 'sentido Boulogne–Pont de Saint-Cloud']],
+          post: LMP_POST },
+        { pre: 'Volte a pé até La Motte-Picquet–Grenelle (≈ 9 min).',
+          rides: [['L8', 'La Motte-Picquet–Grenelle', 'Madeleine', 5, 'sentido Pointe du Lac'], ['L14', 'Madeleine', "Aéroport d'Orly", null, "sentido Aéroport d'Orly, ≈ 30 min"]],
+          post: 'Use o bilhete do aeroporto. A estação Aéroport d’Orly fica entre os terminais.' }
+      ]
+    },
+    DAYS: [
+      {
+        id: 'dia-12', cls: 'd1', tab: 'Qui 12/11', title: 'Quinta, 12 de novembro · Louvre, Ópera e Torre Eiffel',
+        legs: [null, m(55, 19600), m(35, 4710), w(20, 1620), w(4, 300), w(9, 690), w(8, 680), w(10, 830), w(13, 1060), w(14, 1090), w(25, 1980), w(6, 490), w(11, 870), w(9, 690), w(4, 280), w(3, 270), w(7, 560)],
+        stops: [
+          { name: ORLY, tag: 'Chegada', win: '12h00', airport: true, note: 'Pouso às 12h00. Do aeroporto ao hotel é cerca de 1 h de metrô.' },
+          { name: HOTEL, tag: 'Check-in', win: '13h30–14h05', hostel: true, note: 'Deixe as malas (o check-in é às 14h) e saia para o Louvre.' },
+          { name: 'Museu do Louvre', tag: 'Museu de arte', hours: 'Quinta: 9:00–18:00 · fechado ter', win: '14h40–16h40', note: 'Ingresso com horário marcado, comprado no site do museu. Escolha uma ala: Mona Lisa e pintura italiana ficam na ala Denon.' },
+          { name: 'Galeries Lafayette', tag: 'Terraço · pôr do sol', hours: 'Grátis', win: '17h–17h45', note: 'O sol se põe por volta das 17h15: suba ao terraço no último andar para ver a Ópera e a torre. Antes, olhe a cúpula de vitral. O terraço pode fechar com chuva.' },
+          { name: 'Ópera Garnier', tag: 'Ópera · fachada', hours: 'Grátis por fora', win: '17h50–18h', note: 'A fachada iluminada logo ao lado.' },
+          { name: 'Igreja da Madeleine', tag: 'Igreja · fachada', hours: 'Grátis', win: '18h10–18h15', note: 'Igreja em forma de templo grego.' },
+          { name: 'Place de la Concorde', tag: 'Praça · obelisco', hours: 'Aberto 24 horas', win: '18h25–18h35' },
+          { name: 'Pont Alexandre III', tag: 'Ponte', hours: 'Aberto 24 horas', win: '18h45–18h55', note: 'A ponte mais ornamentada de Paris, iluminada à noite, com vista da torre.' },
+          { name: 'Champs-Élysées', tag: 'Avenida · jantar', hours: 'Passeio grátis', win: '19h10–20h15', note: 'Passeio pela avenida e jantar (veja “Onde comer”).' },
+          { name: 'Arco do Triunfo', tag: 'Monumento', hours: 'Subida paga · aberto até 22:30', win: '20h30–20h35', note: 'Foto no fim da avenida. Se quiser subir, pule a Avenue de Camoëns.' },
+          { name: 'Avenue de Camoëns', tag: 'Mirante · torre piscando', hours: 'Aberto 24 horas', win: '21h–21h10', note: 'Escadaria com a torre de frente, mais vazia que o Trocadéro. Às 21h em ponto a torre pisca por 5 min.' },
+          { name: 'Trocadéro', tag: 'Mirante', hours: 'Grátis', win: '21h16–21h30', note: 'A esplanada com a vista clássica. O Café Lucy, no Musée de l’Homme, fica aqui (veja “Onde comer”).' },
+          { name: 'Pont de Bir-Hakeim', tag: 'Ponte · mirante', hours: 'Aberto 24 horas', win: '21h41', note: 'Ponte de dois andares, com o metrô por cima e uma das melhores fotos da torre.' },
+          { name: 'Rue de Buenos Aires', tag: 'Rua · vista da torre', hours: 'Aberto 24 horas', win: '21h50–21h55', note: 'Rua curta que termina na torre, boa para foto.' },
+          { name: 'Torre Eiffel', tag: 'Monumento', hours: 'Grátis por fora', win: '21h59–22h10', note: 'Embaixo da torre às 22h, quando ela pisca de novo.' },
+          { name: "Rue de l'Université", tag: 'Rua · vista da torre', hours: 'Aberto 24 horas', win: '22h13–22h18', note: 'A torre enquadrada entre os prédios: uma das fotos mais famosas de Paris.' },
+          { name: 'Champ de Mars', tag: 'Parque', hours: 'Aberto 24 horas', win: '22h25', note: 'Última vista da torre iluminada, já no caminho do hotel.' }
+        ],
+        end: { name: HOTEL, leg: w(11, 910), note: 'Volta a pé para o hotel.' },
+        extra: [
+          ex('Montmartre e Sacré-Cœur', 'Bairro · lojas de souvenirs', 48.88653, 2.3408, 'Place du Tertre, Paris', 'Place du Tertre, pintores e lojas de souvenirs, com a Sacré-Cœur ao lado. Para ir, troque o trecho Concorde–Champs-Élysées por Montmartre e jante no Bouillon Pigalle.'),
+          ex("Mur des je t'aime", 'Muro do “eu te amo”', 48.88481, 2.33852, "Mur des je t'aime, Square Jehan-Rictus, Paris", '“Eu te amo” escrito em mais de 250 línguas, na Place des Abbesses, no caminho de Montmartre.'),
+          ex('Canal Saint-Martin', 'Canal · à noite', 48.86896, 2.36717, 'Canal Saint-Martin, Quai de Valmy, Paris', 'Pontes de ferro e bares na beira do canal, bonito à noite. Cerca de 20 min de metrô da Ópera.')
+        ],
+        alerts: [
+          { t: 'Dia longo a pé', x: 'São cerca de 12 km a pé, do Louvre até a torre. Se cansar, corte a Pont Alexandre III, a Avenue de Camoëns e o Champ de Mars, ou pegue um táxi da Champs-Élysées até o Trocadéro.' },
+          { t: 'Linha 6 em obras', x: 'Até 22/11, a linha 6 tem obras entre Charles de Gaulle–Étoile e La Motte-Picquet–Grenelle, com ônibus substitutos em alguns dias. O roteiro foi montado sem ela: a pé ou pelas linhas 1, 8, 10 e 14.' },
+          { t: 'Bilhete do aeroporto', x: 'O metrô entre Orly e Paris (linha 14) usa um bilhete próprio do aeroporto, mais caro que o comum. Compre na máquina da estação Aéroport d’Orly e confira o preço atual no site da RATP.' }
+        ]
+      },
+      {
+        id: 'dia-13', cls: 'd2', tab: 'Sex 13/11', title: 'Sexta, 13 de novembro · PSG e Quartier Latin',
+        legs: [m(35, 3820), m(50, 9800), w(13, 1040), w(14, 1150), w(12, 990), m(40, 5740), m(55, 19600)],
+        origin: { name: HOTEL, tag: 'Check-out · 8h15', note: 'Deixe as malas guardadas na recepção.' },
+        stops: [
+          { name: 'Parc des Princes', tag: 'Estádio · tour do PSG', hours: 'Ingresso pago', win: '9h30–10h30', note: 'Stadium Tour do PSG.' },
+          { name: 'Notre-Dame', tag: 'Catedral', hours: 'Entrada grátis', win: '11h20–12h', note: 'Reaberta em dezembro de 2024. Dá para reservar um horário gratuito no site da catedral e evitar a fila.' },
+          { name: 'Le Nesle', tag: 'Almoço · bolo Matilda', win: '12h15–13h', note: 'O bolo de chocolate do filme Matilda, famoso nas redes. Costuma ter fila: confira o horário de abertura.' },
+          { name: 'Jardin du Luxembourg', tag: 'Jardim', hours: 'Grátis', win: '13h15–13h40', note: 'O jardim do Palácio do Luxemburgo, com o lago e as cadeiras verdes.' },
+          { name: 'Panthéon', tag: 'Monumento · fachada', hours: 'Grátis por fora', win: '13h50–14h', note: 'Onde estão enterrados Victor Hugo, Voltaire e Marie Curie. A visita interna é paga e não cabe no tempo.' },
+          { name: HOTEL, tag: 'Retirar as malas', win: '14h40–14h55', hostel: true },
+          { name: ORLY, tag: 'Voo às 18h', win: 'Chegada ~15h50', airport: true, note: 'Voo para Barcelona às 18h.' }
+        ],
+        extra: [
+          ex('Sainte-Chapelle', 'Capela gótica · vitrais', 48.85539, 2.34499, 'Sainte-Chapelle, 8 Boulevard du Palais, Paris', 'A 5 min de Notre-Dame, com vitrais do chão ao teto. Ingresso com horário no site. Para caber, corte o Luxembourg e o Panthéon.'),
+          ex('Place de la Bastille', 'Praça', 48.85267, 2.36882, 'Place de la Bastille, Paris', 'A ~20 min a pé de Notre-Dame. A Brasserie Rosie fica ao lado (veja “Onde comer”).')
+        ],
+        alerts: [
+          { t: 'Margem para o voo', x: 'Saindo do hotel às 14h55, a chegada a Orly fica por volta das 15h50, pouco mais de 2 h antes do voo. Para um voo dentro da Europa é suficiente, mas sem muita folga: se a manhã atrasar, corte o Panthéon.' }
+        ]
+      }
+    ]
+  };
+})());
+
+/* ================= BARCELONA ================= */
+CITIES.push((function () {
+  var HOTEL = 'Eurohotel Diagonal Port';
+  var CURTO = { walk: true, txt: 'Trecho curto: a pé é mais rápido que o metrô.' };
+  var HOTEL_PRE = 'A estação Poblenou (L4) fica a ~7 min a pé do hotel.';
+  var HOTEL_POST = 'Da estação Poblenou, ~7 min a pé até o hotel.';
+  var MNAC = "MNAC · Museu Nacional d'Art de Catalunya";
+  var KIKO = "Portal de l'Àngel · Kiko Milano";
+  return {
+    id: 'barcelona', tab: 'Barcelona', short: '13–16 nov', suffix: 'Barcelona',
+    kicker: '14 e 15 de novembro de 2026', title: 'Barcelona em dois dias',
+    base: 'Base no Eurohotel Diagonal Port, no Poblenou, a ~7 min do metrô Poblenou (L4). Distâncias a pé calculadas pelo OpenStreetMap; trechos de metrô são estimativas (≈).',
+    mode: Object.assign({}, MODE_METRO, { note: 'Linhas e estações do metrô de Barcelona (TMB). FM é o funicular de Montjuïc e TM, o teleférico. Confira no link de cada trecho se há alguma interrupção no dia.' }),
+    CURTO: CURTO,
+    FOOD: [
+      fd('Mercadona · Plaça de la Unió', 'super', 41.40103, 2.20527, 'Mercadona, Plaça de la Unió, Barcelona', 'O mais perto do hotel.'),
+      fd('Bonpreu · Carrer del Joncar', 'super', 41.40058, 2.20343, 'Bonpreu, Carrer del Joncar, Barcelona', ''),
+      fd('Rambla del Poblenou', 'rest', 41.39796, 2.20537, 'Rambla del Poblenou, Barcelona', 'Rua de pedestres do bairro do hotel, com bares e restaurantes locais.'),
+      fd('Mercat de la Boqueria', 'mercado', 41.38174, 2.17155, 'Mercat de la Boqueria, Barcelona', 'Bancas de comida pronta e frutas. Fechado aos domingos.'),
+      fd('Granja M. Viader', 'doce', 41.38296, 2.171, 'Granja M. Viader, Carrer d\'en Xuclà 4, Barcelona', 'Granja clássica de 1870, onde nasceu o Cacaolat. Ao lado da Boqueria.'),
+      fd('Bar Cañete', 'tapas', 41.37914, 2.17314, 'Bar Cañete, Carrer de la Unió 17, Barcelona', 'Tapas no balcão, perto da Rambla. Vale reservar.'),
+      fd('La Colmena', 'doce', 41.38379, 2.17823, 'La Colmena, Plaça de l\'Àngel 12, Barcelona', 'Confeitaria histórica de doces catalães, ao lado do metrô Jaume I.'),
+      fd('Churrería Laietana', 'doce', 41.38639, 2.1757, 'Churrería Laietana, Via Laietana 46, Barcelona', 'Churros, perto da catedral.'),
+      fd('El Xampanyet', 'tapas', 41.38451, 2.18167, 'El Xampanyet, Carrer de Montcada 22, Barcelona', 'Cava e tapas ao lado do Museu Picasso. Costuma lotar.'),
+      fd('Mercat de Santa Caterina', 'mercado', 41.38614, 2.1785, 'Mercat de Santa Caterina, Barcelona', 'Mercado do telhado colorido, no Born. Fechado aos domingos.'),
+      fd('Cervecería Catalana', 'tapas', 41.3924, 2.1609, 'Cervecería Catalana, Carrer de Mallorca 236, Barcelona', 'Montaditos e tapas perto da Casa Batlló. Fila na hora do almoço.'),
+      fd('La Cova Fumada', 'tapas', 41.3793, 2.18919, 'La Cova Fumada, Carrer del Baluard 56, Barcelona', 'Onde nasceu a bomba, bolinho de batata com carne. Confira o horário de domingo.'),
+      fd('Can Solé', 'rest', 41.37898, 2.18835, 'Can Solé, Carrer de Sant Carles 4, Barcelona', 'Arroz e paella na Barceloneta. Vale reservar.'),
+      fd('081 Pizzeria Napoletana', 'rest', 41.3802, 2.1903, "081 Pizzeria Napoletana, Carrer d'Andrea Dòria 12, Barcelona", 'Pizza napolitana na Barceloneta, a poucos minutos da praia. Boa opção para o jantar de domingo.')
+    ],
+    foodRef: HOTEL,
+    Q: {
+      'Eurohotel Diagonal Port': 'Eurohotel Diagonal Port, Carrer de Lope de Vega 4, 08005 Barcelona',
+      'Spotify Camp Nou': 'Spotify Camp Nou, Barcelona',
+      'Mercado La Boqueria': 'Mercat de la Boqueria, Barcelona',
+      'La Rambla': 'La Rambla, Barcelona',
+      'Plaça Reial': 'Plaça Reial, Barcelona',
+      'Pont del Bisbe': 'Pont del Bisbe, Carrer del Bisbe, Barcelona',
+      'Catedral de Barcelona': 'Catedral de Barcelona',
+      'Museu Picasso': 'Museu Picasso, Barcelona',
+      'Santa Maria del Mar': 'Basílica de Santa Maria del Mar, Barcelona',
+      'Teleférico de Montjuïc': 'Telefèric de Montjuïc, Barcelona',
+      'Castell de Montjuïc': 'Castell de Montjuïc, Barcelona',
+      "MNAC · Museu Nacional d'Art de Catalunya": "Museu Nacional d'Art de Catalunya, Barcelona",
+      'Plaça de Catalunya + Primark': 'Plaça de Catalunya, Barcelona',
+      "Portal de l'Àngel · Kiko Milano": "KIKO Milano, Avinguda del Portal de l'Àngel 16, Barcelona",
+      'Sagrada Família': 'Basílica de la Sagrada Família, Barcelona',
+      'Park Güell': 'Park Güell, Barcelona',
+      'Casa Milà (La Pedrera)': 'Casa Milà La Pedrera, Barcelona',
+      'Passeig de Gràcia': 'Passeig de Gràcia, Barcelona',
+      'Casa Batlló': 'Casa Batlló, Barcelona',
+      'Arco do Triunfo': 'Arc de Triomf, Barcelona',
+      'Parc de la Ciutadella': 'Parc de la Ciutadella, Barcelona',
+      'Museu de História de Barcelona': 'MUHBA Plaça del Rei, Barcelona',
+      'Rambla de Mar': 'Rambla de Mar, Barcelona',
+      'Maremagnum': 'Maremagnum, Barcelona',
+      'La Barceloneta e praia': 'Platja de la Barceloneta, Barcelona'
+    },
+    COORD: {
+      'Eurohotel Diagonal Port': [41.40071, 2.20884],
+      'Spotify Camp Nou': [41.38088, 2.12282],
+      'Mercado La Boqueria': [41.38174, 2.17155],
+      'La Rambla': [41.3797, 2.1740],
+      'Plaça Reial': [41.3801, 2.17526],
+      'Pont del Bisbe': [41.38328, 2.17644],
+      'Catedral de Barcelona': [41.38393, 2.17655],
+      'Museu Picasso': [41.3851, 2.1812],
+      'Santa Maria del Mar': [41.38378, 2.18201],
+      'Teleférico de Montjuïc': [41.36765, 2.16723],
+      'Castell de Montjuïc': [41.36338, 2.16614],
+      "MNAC · Museu Nacional d'Art de Catalunya": [41.3686, 2.15346],
+      'Plaça de Catalunya + Primark': [41.38677, 2.17104],
+      "Portal de l'Àngel · Kiko Milano": [41.38552, 2.17338],
+      'Sagrada Família': [41.4035, 2.17443],
+      'Park Güell': [41.41423, 2.15246],
+      'Casa Milà (La Pedrera)': [41.3954, 2.16176],
+      'Passeig de Gràcia': [41.3935, 2.1634],
+      'Casa Batlló': [41.39154, 2.1647],
+      'Arco do Triunfo': [41.39211, 2.18091],
+      'Parc de la Ciutadella': [41.38842, 2.18625],
+      'Museu de História de Barcelona': [41.38416, 2.17739],
+      'Rambla de Mar': [41.37505, 2.181],
+      'Maremagnum': [41.37517, 2.18283],
+      'La Barceloneta e praia': [41.37933, 2.19297]
+    },
+    LINE_COLOR: { L1: '#E2231A', L3: '#00A04B', L4: '#FFC20E', L5: '#0072BC', FM: '#3E7D32', TM: '#5B6A74' },
+    DARK_TEXT: { L4: 1 },
+    METRO: {
+      'sabado': [
+        { pre: HOTEL_PRE, rides: [['L4', 'Poblenou', 'Verdaguer', 9, 'sentido Trinitat Nova'], ['L5', 'Verdaguer', 'Badal', 6, 'sentido Cornellà Centre']],
+          post: 'De Badal, ~8 min a pé até a entrada do museu.' },
+        { pre: 'A estação Les Corts (L3) fica a ~10 min a pé do Camp Nou.',
+          rides: [['L3', 'Les Corts', 'Liceu', 8, 'sentido Trinitat Nova']],
+          post: 'A Boqueria fica a ~3 min a pé da saída da estação Liceu.' },
+        CURTO,
+        { walk: true, txt: 'A praça fica logo ao lado da Rambla (≈ 2 min).' },
+        { walk: true, txt: 'A pé pela Carrer de Ferran até a Plaça de Sant Jaume e depois pela Carrer del Bisbe (≈ 6 min).' },
+        { walk: true, txt: 'A catedral fica no fim da Carrer del Bisbe (≈ 2 min).' },
+        { walk: true, txt: 'A pé pela Via Laietana e pela Carrer de la Princesa até a Carrer de Montcada (≈ 6 min).' },
+        { walk: true, txt: 'A pé, descendo a Carrer de Montcada (≈ 2 min).' },
+        { pre: 'A pé até a estação Drassanes (L3), ≈ 15 min.',
+          rides: [['L3', 'Drassanes', 'Paral·lel', 1, 'sentido Zona Universitària'], ['FM', 'Paral·lel', 'Parc de Montjuïc', 1, 'funicular, vale o mesmo bilhete do metrô']],
+          post: 'O teleférico sai ao lado da estação Parc de Montjuïc do funicular.' },
+        { rides: [['TM', 'Parc de Montjuïc', 'Castell', null, 'teleférico, ≈ 5 min']],
+          post: 'O teleférico tem bilhete próprio. Compre só a ida: a descida até o MNAC é a pé.' },
+        { walk: true, txt: 'A pé, descendo pelos jardins de Montjuïc até a frente do museu (≈ 26 min).' },
+        { pre: 'Desça as escadarias do museu, com escadas rolantes, até a estação Espanya (≈ 13 min).',
+          rides: [['L3', 'Espanya', 'Catalunya', 5, 'sentido Trinitat Nova']],
+          post: 'A saída dá na própria Plaça de Catalunya.' },
+        { walk: true, txt: 'A Avinguda del Portal de l’Àngel começa na própria praça (≈ 3 min).' },
+        { pre: 'A estação Urquinaona fica a ~6 min a pé.', rides: [['L4', 'Urquinaona', 'Poblenou', 6, 'sentido La Pau']], post: HOTEL_POST }
+      ],
+      'domingo': [
+        { pre: HOTEL_PRE, rides: [['L4', 'Poblenou', 'Verdaguer', 9, 'sentido Trinitat Nova'], ['L5', 'Verdaguer', 'Sagrada Família', 1, "sentido Vall d'Hebron"]],
+          post: 'A estação sai em frente à basílica. Às 7h40 da manhã de domingo, um táxi leva ≈ 15 min.' },
+        { rides: [['L5', 'Sagrada Família', 'Diagonal', 2, 'sentido Cornellà Centre'], ['L3', 'Diagonal', 'Vallcarca', 3, 'sentido Trinitat Nova']],
+          post: 'De Vallcarca, ~15 min a pé, subindo, até a entrada do Park Güell (há escadas rolantes na Baixada de la Glòria).' },
+        { pre: 'Volte a pé até a estação Vallcarca (~15 min, descida).', rides: [['L3', 'Vallcarca', 'Diagonal', 3, 'sentido Zona Universitària']],
+          post: 'A Casa Milà fica a ~2 min da saída da estação Diagonal no Passeig de Gràcia.' },
+        { walk: true, txt: 'A pé, descendo o Passeig de Gràcia (≈ 3 min).' },
+        { walk: true, txt: 'A Casa Batlló fica no mesmo passeio, um quarteirão abaixo (≈ 4 min).' },
+        { pre: 'A estação Passeig de Gràcia fica a ~2 min da Casa Batlló.',
+          rides: [['L4', 'Passeig de Gràcia', 'Urquinaona', 1, 'sentido La Pau'], ['L1', 'Urquinaona', 'Arc de Triomf', 1, 'sentido Fondo']],
+          post: 'Alternativa: a pé, ≈ 22 min.' },
+        { walk: true, txt: 'A pé pelo Passeig de Lluís Companys até a entrada do parque (≈ 10 min).' },
+        { walk: true, txt: 'A pé pelo Born até a Plaça del Rei (≈ 14 min).' },
+        { walk: true, txt: 'A pé pela Via Laietana até o porto, ao pé do monumento a Colombo (≈ 18 min).' },
+        { walk: true, txt: 'A Rambla de Mar é a passarela de madeira que leva ao Maremagnum (≈ 8 min).' },
+        { walk: true, txt: 'A pé pelo Passeig de Joan de Borbó até a praia (≈ 24 min).' },
+        { pre: 'A estação Barceloneta (L4) fica a ~10 min a pé da praia.', rides: [['L4', 'Barceloneta', 'Poblenou', 4, 'sentido La Pau']], post: HOTEL_POST }
+      ]
+    },
+    DAYS: [
+      {
+        id: 'sabado', cls: 'd1', tab: 'Sáb 14/11', title: 'Sábado, 14 de novembro · Camp Nou, Gótico e Montjuïc',
+        legs: [m(45, 10980), m(30, 5920), w(5, 410), w(2, 170), w(6, 490), w(2, 180), w(6, 490), w(2, 180), m(35, 4940), { mode: BUS, min: 8, m: 650, approx: true }, w(26, 2040), m(25, 3480), w(3, 280)],
+        origin: { name: HOTEL, tag: 'Partida · 8h45' },
+        stops: [
+          { name: 'Spotify Camp Nou', tag: 'Estádio · museu', hours: 'Confira o horário no site do clube', win: '10h–11h15', note: 'Durante a reforma, o tour é o museu, uma sala imersiva e um mirante sobre as obras.' },
+          { name: 'Mercado La Boqueria', tag: 'Mercado · almoço', hours: 'Fechado aos domingos', win: '11h50–12h50', note: 'Conhecer o mercado e almoçar.' },
+          { name: 'La Rambla', tag: 'Avenida', win: '12h55–13h10', note: 'Passeio pela avenida. Atenção com a carteira.' },
+          { name: 'Plaça Reial', tag: 'Praça', hours: 'Aberto 24 horas', win: '13h12–13h20', note: 'Praça com palmeiras e postes desenhados por Gaudí.' },
+          { name: 'Pont del Bisbe', tag: 'Ponte gótica', hours: 'Aberto 24 horas', win: '13h27', note: 'A pontezinha rendada sobre a Carrer del Bisbe, a foto mais famosa do Bairro Gótico.' },
+          { name: 'Catedral de Barcelona', tag: 'Catedral', hours: 'Fachada grátis', win: '13h30–13h50', note: 'Por fora é grátis. A visita interna é paga em boa parte do dia.' },
+          { name: 'Museu Picasso', tag: 'Museu de arte', win: '14h–15h20', note: 'Compre o ingresso com horário no site do museu.' },
+          { name: 'Santa Maria del Mar', tag: 'Basílica', win: '15h25–15h40', note: 'A basílica gótica do Born. Em alguns horários a entrada é paga.' },
+          { name: 'Teleférico de Montjuïc', tag: 'Teleférico', hours: 'Confira o horário de inverno', win: '16h15', note: 'Sobe até o castelo com vista do porto e da cidade.' },
+          { name: 'Castell de Montjuïc', tag: 'Castelo · mirante', hours: 'Fecha mais cedo no inverno', win: '16h25–16h50', note: 'Fortaleza no alto do morro. A vista do porto já vale a subida.' },
+          { name: MNAC, tag: 'Mirante · pôr do sol', hours: 'Escadaria grátis', win: '17h16–17h50', note: 'O sol se põe por volta das 17h30. A escadaria em frente ao museu tem a vista da cidade inteira, até a Plaça d’Espanya.' },
+          { name: 'Plaça de Catalunya + Primark', tag: 'Praça · compras', win: '18h20–18h40', note: 'O centro da cidade. O Primark fica na praça.' },
+          { name: KIKO, tag: 'Compras · batom personalizado', win: '18h45–19h45', note: 'Rua de pedestres de compras. A Kiko Milano fica no número 16, onde dá para personalizar o batom.' }
+        ],
+        end: { name: HOTEL, leg: m(25, 4950), note: 'Jantar e volta ao hotel.' },
+        alerts: [
+          { t: 'Camp Nou em obras', x: 'O estádio ainda está em reforma e a visita aos vestiários e ao túnel só deve voltar no fim de 2026 ou em 2027. Confira no site do FC Barcelona o que o ingresso inclui e o horário de novembro.' },
+          { t: 'Montjuïc no fim da tarde', x: 'Teleférico e castelo fecham mais cedo no inverno. Se estiverem fechados quando você chegar, suba de ônibus ou a pé direto até o MNAC: o pôr do sol é o mais importante.' }
+        ]
+      },
+      {
+        id: 'domingo', cls: 'd2', tab: 'Dom 15/11', title: 'Domingo, 15 de novembro · Gaudí, Gótico e porto',
+        legs: [m(32, 4070), m(30, 3740), m(25, 3550), w(3, 280), w(4, 290), m(15, 1690), w(10, 810), w(14, 1150), w(18, 1460), w(8, 600), w(24, 1890)],
+        origin: { name: HOTEL, tag: 'Partida · ~7h40' },
+        stops: [
+          { name: 'Sagrada Família', tag: 'Basílica', win: '8h15–10h25', note: 'Chegada às 8h15, missa das 9h às 10h, depois fotos. Saia às 10h25 para o Park Güell.' },
+          { name: 'Park Güell', tag: 'Parque · Gaudí', win: '11h–12h30', note: 'A entrada da área monumental tem horário marcado no ingresso.' },
+          { name: 'Casa Milà (La Pedrera)', tag: 'Casa de Gaudí', win: '13h30–14h40', note: 'Almoço no caminho, entre 12h30 e 13h30.' },
+          { name: 'Passeig de Gràcia', tag: 'Avenida · Gaudí e grifes', win: '14h45–14h55', note: 'A avenida mais elegante da cidade, com as casas modernistas e as lojas de grife.' },
+          { name: 'Casa Batlló', tag: 'Casa de Gaudí', win: '15h–16h', note: 'Ao lado fica a Casa Amatller: as duas formam a “Manzana de la Discordia”.' },
+          { name: 'Arco do Triunfo', tag: 'Monumento', hours: 'Aberto 24 horas', win: '16h15–16h20' },
+          { name: 'Parc de la Ciutadella', tag: 'Parque', win: '16h30–16h50', note: 'Não deixe de ver a Cascada Monumental, a fonte grande do parque.' },
+          { name: 'Museu de História de Barcelona', tag: 'Museu · grátis no domingo à tarde', win: '17h05–17h55', note: 'Na Plaça del Rei. Aos domingos, a entrada é gratuita a partir das 15h. No subsolo ficam as ruínas da Barcelona romana.' },
+          { name: 'Rambla de Mar', tag: 'Passarela no porto', hours: 'Aberto 24 horas', win: '18h15', note: 'A passarela de madeira sobre o porto, ao pé do monumento a Colombo.' },
+          { name: 'Maremagnum', tag: 'Shopping · aberto no domingo', win: '18h20–18h50', note: 'Um dos poucos shoppings abertos aos domingos, com vista do porto.' },
+          { name: 'La Barceloneta e praia', tag: 'Praia · jantar', win: '19h15–20h30', note: 'Passeio pelo calçadão à noite e jantar no bairro: a 081 Pizzeria Napoletana fica a ≈ 4 min (veja “Onde comer”).' }
+        ],
+        end: { name: HOTEL, leg: m(25, 4060) },
+        extra: [
+          ex('Passeio de barco · Las Golondrinas', 'Barco pelo porto', 41.37531, 2.17889, 'Las Golondrinas, Plaça del Portal de la Pau, Barcelona', 'Os barcos saem do pé do monumento a Colombo, ao lado da Rambla de Mar. No inverno o último passeio sai no fim da tarde: confira o horário. Para caber, troque pelo Parc de la Ciutadella.')
+        ],
+        alerts: [
+          { t: 'Saída cedo', x: 'Para chegar à Sagrada Família às 8h15 de metrô, saia do hotel por volta das 7h40.' },
+          { t: 'Domingo em Barcelona', x: 'Os mercados, como a Boqueria e o Santa Caterina, e boa parte do comércio fecham aos domingos. O Maremagnum, os restaurantes e as atrações abrem normalmente.' }
+        ]
+      }
+    ]
+  };
+})());
+
+/* ================= ANDORRA ================= */
+CITIES.push((function () {
+  var HOTEL = 'Hotel Andorra Palace';
+  var CURTO = { walk: true, txt: 'Trecho curto e plano: vá a pé.' };
+  return {
+    id: 'andorra', tab: 'Andorra', short: '16–18 nov', suffix: 'Andorra',
+    kicker: '16 e 17 de novembro de 2026', title: 'Andorra em dois dias',
+    base: 'Base no Hotel Andorra Palace, no centro de Andorra la Vella. Distâncias a pé calculadas pelo OpenStreetMap; trechos de ônibus são estimativas (≈).',
+    mode: { leg: 'ônibus', facts: 'de ônibus', legend: 'ônibus', alt: 'De ônibus', title: '🚌 Como ir de ônibus',
+      note: 'Ônibus nacionais de Andorra; PT é o ônibus da Pont Tibetà, incluso no ingresso. Confira no link de cada trecho se há alguma interrupção no dia.' },
+    CURTO: CURTO,
+    FOOD: [
+      fd('Borda Estevet', 'rest', 42.50326, 1.51935, 'Borda Estevet, Carretera de la Comella 2, Andorra la Vella', 'Cozinha andorrana tradicional numa antiga casa de pedra.'),
+      fd('Can Benet', 'rest', 42.50721, 1.52043, 'Can Benet, Antic Carrer Major 9, Andorra la Vella', 'Cozinha andorrana no centro histórico, perto da Casa de la Vall.'),
+      fd('Hincha (restaurante do Messi)', 'rest', 42.5112, 1.5390, 'Hincha, MiM Andorra, Escaldes-Engordany', 'Reserva feita para o jantar de terça. Local aproximado.'),
+      fd('Caprabo · Prat de la Creu', 'super', 42.50669, 1.52343, 'Caprabo, Carrer Prat de la Creu, Andorra la Vella', 'Supermercado perto do hotel.'),
+      fd('Carrefour City · Escaldes', 'super', 42.50938, 1.54088, 'Carrefour City, Carrer Santa Anna, Escaldes-Engordany', 'Perto do Caldea.')
+    ],
+    foodRef: HOTEL,
+    Q: {
+      'Hotel Andorra Palace': 'Hotel Andorra Palace, Andorra la Vella',
+      'Parc Central': 'Parc Central, Andorra la Vella',
+      'Avinguda Meritxell': 'Centre Comercial Pyrénées, Avinguda Meritxell 11, Andorra la Vella',
+      'La Noblesse du Temps': 'La Noblesse du Temps, Plaça de la Rotonda, Andorra la Vella',
+      'Pont de París': 'Pont de París, Andorra la Vella',
+      'Igreja de Sant Pere Màrtir': 'Sant Pere Màrtir, Plaça de l\'Església, Escaldes-Engordany',
+      'Sant Joan de Caselles': 'Sant Joan de Caselles, Canillo',
+      'Set Poetes': 'Set Poetes, Jaume Plensa, Carrer del Consell General, Andorra la Vella',
+      'Caldea': 'Caldea, Escaldes-Engordany',
+      'Pont Tibetà de Canillo': 'Pont Tibetà de Canillo',
+      'Casa de la Vall': 'Casa de la Vall, Andorra la Vella',
+      'Plaça del Poble': 'Plaça del Poble, Andorra la Vella',
+      'Igreja de Sant Esteve': 'Església de Sant Esteve, Andorra la Vella',
+      'Rec del Solà': 'Rec del Solà, Andorra la Vella',
+      'Hincha (restaurante do Messi)': 'Hincha, MiM Andorra, Escaldes-Engordany'
+    },
+    COORD: {
+      'Hotel Andorra Palace': [42.50844, 1.52692],
+      'Parc Central': [42.50599, 1.52594],
+      'Avinguda Meritxell': [42.50827, 1.52416],
+      'La Noblesse du Temps': [42.50876, 1.52948],
+      'Pont de París': [42.50924, 1.53065],
+      'Igreja de Sant Pere Màrtir': [42.50891, 1.54161],
+      'Sant Joan de Caselles': [42.57083, 1.60779],
+      'Set Poetes': [42.5063, 1.52112],
+      'Caldea': [42.51152, 1.53759],
+      'Pont Tibetà de Canillo': [42.5767, 1.6103],
+      'Casa de la Vall': [42.50661, 1.52051],
+      'Plaça del Poble': [42.50665, 1.52228],
+      'Igreja de Sant Esteve': [42.50718, 1.52169],
+      'Rec del Solà': [42.52139, 1.52279],
+      'Hincha (restaurante do Messi)': [42.5112, 1.5390]
+    },
+    LINE_COLOR: { L4: '#D8402A', PT: '#2E7D4F' },
+    DARK_TEXT: {},
+    METRO: {
+      'dia-16': [CURTO, CURTO,
+        { walk: true, txt: 'A pé pela Avinguda Meritxell até a Plaça de la Rotonda (≈ 7 min).' },
+        CURTO,
+        { walk: true, txt: 'A pé pela Avinguda Carlemany até a Plaça de l’Església, em Escaldes (≈ 14 min).' },
+        { walk: true, txt: 'O Caldea fica a 7 min a pé, descendo para o rio. Não vale esperar ônibus.' },
+        { walk: true, txt: 'A pé de volta ao hotel (≈ 14 min).' }
+      ],
+      'dia-17': [
+        { pre: 'A Estació Nacional d’Autobusos, de onde saem as linhas nacionais, fica a ≈ 11 min a pé do hotel.',
+          rides: [['L4', 'Andorra la Vella', 'Canillo', null, 'linha para o Pas de la Casa, ≈ 30 min'], ['PT', 'Canillo', 'Pont Tibetà', null, 'ônibus do ingresso, a cada 30 min a partir das 9h30']],
+          post: 'Do ponto final, ≈ 1 km a pé por uma trilha até a ponte.' },
+        { walk: true, txt: 'Na volta, em vez do ônibus da ponte, desça a pé até a igreja (≈ 21 min). Se preferir, volte de ônibus até Canillo e pule esta parada.' },
+        { pre: 'A pé até o centro de Canillo (≈ 13 min).',
+          rides: [['L4', 'Canillo', 'Andorra la Vella', null, '≈ 30 min']],
+          post: 'Desça no centro de Andorra la Vella e almoce no centro histórico, perto da Casa de la Vall.' },
+        { walk: true, txt: 'As esculturas ficam na mesma rua, a Carrer del Consell General (≈ 3 min).' },
+        { walk: true, txt: 'A pé até a praça (≈ 5 min).' },
+        CURTO,
+        { walk: true, txt: 'A pé, subindo pelas ruas do bairro até o caminho do canal (≈ 30 min, com subida).' },
+        { walk: true, txt: 'A pé, descendo de volta ao hotel (≈ 24 min).' },
+        { walk: true, txt: 'A pé pela Avinguda Meritxell e Avinguda Carlemany (≈ 15 min). Saia do hotel por volta das 19h40.' },
+        { walk: true, txt: 'A pé de volta ao hotel (≈ 15 min), ou táxi se estiver frio.' }
+      ]
+    },
+    DAYS: [
+      {
+        id: 'dia-16', cls: 'd1', tab: 'Seg 16/11', title: 'Segunda, 16 de novembro · Centro e Caldea',
+        legs: [w(9, 730), w(8, 670), w(7, 530), w(2, 120), w(14, 1150), w(7, 580)],
+        origin: { name: HOTEL, tag: 'Check-in 14h · saída ~14h30', note: 'O ônibus chega às 13h45 na Estació Nacional d’Autobusos. Do terminal ao hotel são ≈ 11 min a pé.' },
+        stops: [
+          { name: 'Parc Central', tag: 'Parque', hours: 'Aberto 24 horas', win: '14h40–15h' },
+          { name: 'Avinguda Meritxell', tag: 'Rua de compras', win: '15h05–15h45', note: 'A principal rua de compras do país, com impostos baixos. O Pyrénées é a loja de departamentos mais conhecida.' },
+          { name: 'La Noblesse du Temps', tag: 'Escultura de Dalí', hours: 'Aberto 24 horas', win: '15h50–15h55', note: 'O relógio derretido de Dalí, na Plaça de la Rotonda.' },
+          { name: 'Pont de París', tag: 'Ponte', hours: 'Aberto 24 horas', win: '15h58' },
+          { name: 'Igreja de Sant Pere Màrtir', tag: 'Igreja neogótica', hours: 'Fachada grátis', win: '16h12–16h20', note: 'Igreja de pedra em estilo neogótico, no centro de Escaldes, a caminho do Caldea.' },
+          { name: 'Caldea', tag: 'Spa termal', hours: 'Aberto 11:00–20:00', win: '16h30–19h30', note: 'O spa de Andorra, marcado para as 16h30. Compre a entrada antes no site e confira quanto tempo ela dá dentro do spa.' }
+        ],
+        end: { name: HOTEL, leg: w(14, 1130), note: 'Jantar e volta a pé para o hotel.' },
+        extra: [
+          ex('Grandvalira Resorts', 'Escritório', 42.5101, 1.5338, 'Grandvalira Resorts, Andorra', 'Local aproximado: confira o endereço e o horário de atendimento antes de ir.')
+        ],
+        alerts: []
+      },
+      {
+        id: 'dia-17', cls: 'd2', tab: 'Ter 17/11', title: 'Terça, 17 de novembro · Pont Tibetà e centro histórico',
+        legs: [m(65, 15000), w(21, 1650), { mode: BUS, min: 55, m: 13500, approx: true }, w(3, 220), w(5, 380), w(2, 140), w(30, 2410), w(24, 1960), w(15, 1240)],
+        origin: { name: HOTEL, tag: 'Partida · ~8h45', note: 'Café da manhã no hotel ou numa padaria do centro antes de sair.' },
+        stops: [
+          { name: 'Pont Tibetà de Canillo', tag: 'Ponte suspensa · Canillo', hours: 'Ingresso inclui o ônibus de Canillo', win: '10h–11h15', far: true, note: '603 m de ponte suspensa sobre o vale.' },
+          { name: 'Sant Joan de Caselles', tag: 'Igreja românica', hours: 'Fachada grátis', win: '11h36–11h45', far: true, note: 'Igreja românica com o campanário típico de Andorra. Por dentro costuma abrir só na temporada, mas a parte de fora já vale.' },
+          { name: 'Casa de la Vall', tag: 'Museu · antigo parlamento', hours: 'Aberto 10:00–14:00 e 15:00–18:00 · fechado seg', win: '15h–15h45', note: 'Almoço antes, no centro histórico (veja “Onde comer”).' },
+          { name: 'Set Poetes', tag: 'Escultura de Jaume Plensa', hours: 'Aberto 24 horas', win: '15h48', note: 'Sete figuras sentadas no alto de postes, feitas de letras, do escultor catalão Jaume Plensa.' },
+          { name: 'Plaça del Poble', tag: 'Praça · mirante', hours: 'Aberto 24 horas', win: '15h53–16h03', note: 'Praça elevada com vista do vale, ao lado do parlamento.' },
+          { name: 'Igreja de Sant Esteve', tag: 'Igreja românica', win: '16h05–16h20' },
+          { name: 'Rec del Solà', tag: 'Trilha · pôr do sol', hours: 'Aberto 24 horas', win: '16h50–17h40', note: 'Caminho plano à beira de um antigo canal de irrigação, com vista do vale. O sol se põe por volta das 17h35.' },
+          { name: HOTEL, tag: 'Pausa no hotel', hostel: true, win: '18h05', note: 'Descanso antes do jantar.' },
+          { name: 'Hincha (restaurante do Messi)', tag: 'Restaurante · jantar', win: '20h', note: 'Dentro do hotel MiM Andorra, do Messi. Reserva feita pelo site do restaurante.' }
+        ],
+        end: { name: HOTEL, leg: w(15, 1240), note: 'Volta para o hotel depois do jantar.' },
+        extra: [
+          ex('Igreja de Santa Coloma', 'Igreja pré-românica · campanário redondo', 42.49415, 1.49754, 'Església de Santa Coloma, Andorra la Vella', 'A igreja mais antiga de Andorra, a ~3 km do centro. Por dentro abre em horários restritos; a parte de fora já vale.'),
+          ex('Pont de la Margineda', 'Ponte medieval', 42.48429, 1.49191, 'Pont de la Margineda, Andorra la Vella', 'Ponte de pedra sobre o rio Valira, a ~4 km ao sul do centro. Dá para combinar com Santa Coloma, de ônibus ou táxi.'),
+          ex('Mirador Roc del Quer', 'Mirante · plataforma suspensa', 42.56715, 1.59104, 'Mirador Roc del Quer, Canillo', 'Plataforma sobre o vale, acima de Canillo. Fica no alto de uma estrada (~40 min de subida a pé) e pode estar fechado em novembro.')
+        ],
+        alerts: [
+          { t: 'Pont Tibetà: ingresso e ônibus', x: 'O ingresso é vendido online ou no posto de turismo de Canillo, não na ponte, e inclui o ônibus de Canillo até lá. Entre no ônibus 30 min antes do horário do ingresso. Em dias úteis, o último ônibus sobe às 14h30 e o último volta às 16h40. A ponte pode fechar por causa do tempo em novembro, e a temporada termina em 22/11.' }
+        ]
+      }
+    ]
+  };
+})());
+
+
+/* ================= HORÁRIOS, HOTÉIS E TRASLADOS ================= */
+function gm(q) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); }
+function gd(a, b, mode) { return 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(a) + '&destination=' + encodeURIComponent(b) + '&travelmode=' + (mode || 'transit'); }
+var ART7 = { name: 'Art Seven Hostel Capsules', addr: 'Calle del Conde de Romanones, 7, 28012 Madrid, Espanha', q: 'Art Seven Hostel Capsules, Calle del Conde de Romanones 7, Madrid' };
+var MAD_AIR = 'Aeropuerto Adolfo Suárez Madrid-Barajas';
+var BCN_NORD = 'Estació del Nord, Carrer d\'Alí Bei 80, Barcelona';
+var AND_BUS = 'Estació Nacional d\'Autobusos, Carrer de la Cúria, Andorra la Vella';
+var AND_HOTEL = 'Hotel Andorra Palace, Avinguda Meritxell 58, Andorra la Vella';
+var TO_MAD_AIR = ['Tirso de Molina · L1', 'Tribunal · L10', 'Nuevos Ministerios · L8', 'Aeroporto T1–T2–T3 ou T4'];
+
+var INFO = {
+  madrid: {
+    range: '9–12 nov',
+    rows: [
+      ['plane', 'Chegada a Madrid', '09/11', '12h00'],
+      ['bed', 'Check-in', '09/11', '15h00'],
+      ['bag', 'Check-out', '12/11', 'Até 11h00'],
+      ['plane', 'Voo para Paris', '12/11', '09h30']
+    ],
+    hotel: ART7,
+    trTitle: 'Metrô e estações',
+    transfers: [
+      { date: '09/11', title: 'Aeroporto de Madrid → Art Seven', url: gd(MAD_AIR, ART7.q),
+        steps: ['T4S → trem interno → T4', 'Aeropuerto T4 · L8', 'Nuevos Ministerios · L10', 'Tribunal · L1', 'Tirso de Molina', 'A pé até Art Seven'],
+        detail: 'Chegando no T4S, pegue o trem interno gratuito até o T4 (≈ 5 min) e siga as placas do Metro. L8 até Nuevos Ministerios, L10 sentido Puerta del Sur até Tribunal e L1 sentido Valdecarros até Tirso de Molina. O bilhete que sai do aeroporto paga um suplemento de € 3. Leva de 50 a 65 min, sem contar imigração e malas.',
+        img: 'img/madrid-aeroporto-hotel.webp', alt: 'Guia ilustrado do trajeto de metrô do aeroporto T4S até a Calle del Conde de Romanones, 7: trem do aeroporto, linha 8 até Nuevos Ministerios, linha 10 até Tribunal, linha 1 até Tirso de Molina e 2 a 4 minutos a pé.' },
+      { date: '12/11', title: 'Art Seven → Aeroporto de Madrid (voo para Paris)', url: gd(ART7.q, MAD_AIR),
+        steps: TO_MAD_AIR,
+        detail: 'Voo às 09h30: saia do hostel por volta das 6h30 (o metrô abre às 6h00). Faça o percurso inverso e desça na estação do terminal indicado no bilhete.',
+        img: 'img/madrid-hotel-aeroporto.webp', alt: 'Guia ilustrado do trajeto de metrô do Art Seven Hostel até o aeroporto Madrid-Barajas: a pé até Tirso de Molina, linha 1 até Tribunal, linha 10 até Nuevos Ministerios e linha 8 até Aeropuerto T4.' }
+    ],
+    alerts: [
+      { t: 'Voo cedo no dia 12', x: 'O voo para Paris sai às 09h30. Com cerca de 1 h de metrô e 2 h de antecedência no aeroporto, saia do hostel por volta das 6h30. Se der, faça o check-out na noite anterior.' }
+    ]
+  },
+  paris: {
+    range: '12–13 nov',
+    rows: [
+      ['plane', 'Voo para Paris', '12/11', '09h30'],
+      ['plane', 'Chegada a Paris', '12/11', '12h00'],
+      ['bed', 'Check-in', '12/11', '14h00'],
+      ['bag', 'Check-out', '13/11', '11h00']
+    ],
+    hotel: { name: 'Hôtel France Eiffel', addr: '8 Rue Saint-Charles, 75015 Paris, França', q: 'Hôtel France Eiffel, 8 Rue Saint-Charles, Paris' },
+    trTitle: 'Metrô e estações',
+    transfers: [
+      { date: '12/11', title: 'Aeroporto de Orly → Hôtel France Eiffel', url: gd('Aéroport de Paris-Orly', 'Hôtel France Eiffel, 8 Rue Saint-Charles, Paris'),
+        steps: ['Aéroport d’Orly · M14', 'Madeleine · M8', 'La Motte-Picquet–Grenelle', 'A pé até o hotel'],
+        detail: 'Linha 14 sentido Saint-Denis Pleyel até Madeleine (≈ 30 min). Troque para a linha 8 sentido Balard e desça em La Motte-Picquet–Grenelle (5 paradas). Dali, ~9 min a pé. Use o bilhete do aeroporto.' },
+      { date: '13/11', title: 'Hôtel France Eiffel → Aeroporto de Orly', url: gd('Hôtel France Eiffel, 8 Rue Saint-Charles, Paris', 'Aéroport de Paris-Orly'),
+        steps: ['La Motte-Picquet–Grenelle · M8', 'Madeleine · M14', 'Aéroport d’Orly'],
+        detail: 'Linha 8 sentido Pointe du Lac até Madeleine; depois linha 14 sentido Aéroport d’Orly. Confira o terminal na passagem.' }
+    ],
+    alerts: [
+      { t: 'Linha 6 em obras', x: 'Até 22/11, a linha 6 tem obras entre Charles de Gaulle–Étoile e La Motte-Picquet–Grenelle. Os trajetos do site usam as linhas 1, 8, 10 e 14 e não dependem dela.' },
+      { t: 'Too Good To Go', x: 'O app vende sacolas-surpresa com as sobras do dia de padarias, mercados e restaurantes, com desconto grande. Em Paris tem muita oferta: procure perto do hotel no fim da tarde e retire na hora marcada.' },
+      { t: 'Check-out antes do passeio', x: 'O check-out é às 11h00 do dia 13, e o roteiro prevê deixar as malas guardadas no hotel e voltar para buscá-las por volta das 14h40.' }
+    ]
+  },
+  barcelona: {
+    range: '13–16 nov',
+    rows: [
+      ['plane', 'Voo para Barcelona', '13/11', '18h00'],
+      ['plane', 'Chegada a Barcelona', '13/11', '20h00'],
+      ['bag', 'Check-out', '16/11', '12h00']
+    ],
+    hotel: { name: 'Eurohotel Diagonal Port', addr: 'Carrer de Lope de Vega, 4, Sant Martí, 08005 Barcelona, Espanha', q: 'Eurohotel Diagonal Port, Carrer de Lope de Vega 4, Barcelona' },
+    trTitle: 'Metrô e rodoviária',
+    transfers: [
+      { date: '13/11', title: 'Aeroporto Barcelona-El Prat → Eurohotel Diagonal Port', url: gd('Aeropuerto Josep Tarradellas Barcelona-El Prat', 'Eurohotel Diagonal Port, Barcelona'),
+        steps: ['Aeroport T1 ou T2 · L9 Sud', 'Torrassa · L1', 'Urquinaona · L4', 'Poblenou', 'A pé até o hotel'],
+        detail: 'L9 Sud sentido Zona Universitària até Torrassa (12 paradas da T1, 11 da T2); L1 sentido Fondo até Urquinaona (10 paradas); L4 sentido La Pau até Poblenou (6 paradas). Dali, ~8 min a pé até o hotel. Use o bilhete Aeroporto (€ 5,90 em 2026): o T-casual não vale nas estações T1/T2. Leva de 70 a 85 min, sem contar imigração e malas.',
+        img: 'img/barcelona-aeroporto-hotel.webp', alt: 'Guia ilustrado do trajeto de metrô do aeroporto de Barcelona (T1 ou T2) até o Eurohotel Diagonal Port: linha L9 Sud até Torrassa, linha 1 até Urquinaona, linha 4 até Poblenou e 8 minutos a pé.' },
+      { date: 'Se precisar', title: 'Eurohotel Diagonal Port → Aeroporto Barcelona-El Prat', url: gd('Eurohotel Diagonal Port, Barcelona', 'Aeropuerto Josep Tarradellas Barcelona-El Prat'),
+        steps: ['Poblenou · L4', 'Urquinaona · L1', 'Torrassa · L9 Sud', 'Aeroport T2 ou T1'],
+        detail: 'O roteiro sai de Barcelona de ônibus, pela Barcelona Nord, mas o caminho fica aqui caso precise ir ao aeroporto. L4 sentido Trinitat Nova até Urquinaona, L1 sentido Hospital de Bellvitge até Torrassa e L9 Sud sentido Aeroport T1. A T2 vem uma parada antes da T1. Reserve de 70 a 85 min de trajeto.',
+        img: 'img/barcelona-hotel-aeroporto.webp', alt: 'Guia ilustrado do trajeto de metrô do Eurohotel Diagonal Port até o aeroporto de Barcelona: a pé até Poblenou, linha 4 até Urquinaona, linha 1 até Torrassa e linha L9 Sud até o terminal T2 ou T1.' },
+      { date: '16/11', title: 'Eurohotel Diagonal Port → Rodoviária Barcelona Nord', url: gd('Eurohotel Diagonal Port, Barcelona', BCN_NORD),
+        steps: ['A pé até Poblenou · L4', 'Urquinaona · L1', 'Arc de Triomf', 'A pé até Barcelona Nord'],
+        detail: 'L4 sentido Trinitat Nova até Urquinaona; L1 sentido Fondo até Arc de Triomf. Rodoviária: Carrer d’Alí Bei, 80, 08013 Barcelona. Saída do ônibus às 10h00.' }
+    ],
+    alerts: [
+      { t: 'Ônibus antes do check-out', x: 'O check-out vai até 12h00, mas o ônibus para Andorra sai da Barcelona Nord às 10h00. Faça o check-out cedo e saia do hotel por volta das 9h15.' }
+    ]
+  },
+  andorra: {
+    range: '16–18 nov',
+    rows: [
+      ['bus', 'Barcelona → Andorra', '16/11', '10h00'],
+      ['town', 'Chegada a Andorra', '16/11', '13h45'],
+      ['bed', 'Check-in', '16/11', '14h00'],
+      ['bag', 'Check-out', '18/11', '07h00–12h00']
+    ],
+    hotel: { name: 'Hotel Andorra Palace', addr: 'Avinguda Meritxell, 58, AD500 Andorra la Vella, Andorra', q: AND_HOTEL },
+    trTitle: 'Rodoviária e caminhada',
+    transfers: [
+      { date: '16/11 · 10h00', title: 'Ônibus Barcelona Nord → Andorra la Vella', url: gd(BCN_NORD, AND_BUS), link: 'Pontos no mapa ↗',
+        steps: ['Barcelona Nord · Carrer d’Alí Bei, 80', 'Ônibus intermunicipal', 'Carrer de la Cúria, s/n · Andorra la Vella'],
+        detail: 'Desembarque na Estació Nacional d’Autobusos d’Andorra. Endereço indicado pela operadora: Carrer de la Cúria, s/n, AD500 Andorra la Vella. Horário de chegada anotado: 13h45.' },
+      { date: '16/11', title: 'Rodoviária de Andorra → Hotel Andorra Palace (a pé)', url: gd(AND_BUS, AND_HOTEL, 'walking'), link: 'Caminhada no mapa ↗',
+        steps: ['Carrer de la Cúria, s/n', 'Caminhada pelo centro', 'Avinguda Meritxell, 58'],
+        detail: 'Trajeto central que pode ser feito a pé; confira a rota para pedestres e o relevo no mapa, principalmente se estiverem com malas.' },
+      { date: '18/11 · 08h00', title: 'Retorno: Andorra Palace → Rodoviária', url: gd(AND_HOTEL, AND_BUS, 'walking'), link: 'Caminhada no mapa ↗',
+        steps: ['Hotel Andorra Palace', 'A pé', 'Carrer de la Cúria, s/n'],
+        detail: 'Se o ônibus de volta sair do mesmo terminal, façam o caminho inverso; confirme o ponto de partida no bilhete.' }
+    ],
+    alerts: [
+      { t: 'Saída cedo no dia 18', x: 'O ônibus para Barcelona sai às 08h00. Faça o check-out e saia do hotel por volta das 7h40.' }
+    ]
+  },
+  volta: {
+    range: '18–19 nov',
+    rows: [
+      ['bus', 'Andorra → Barcelona', '18/11', '08h00'],
+      ['train', 'Barcelona → Madrid', '18/11', '13h00'],
+      ['train', 'Chegada a Madrid', '18/11', '16h30'],
+      ['bed', 'Check-in', '18/11', '15h00–00h00'],
+      ['bag', 'Check-out', '19/11', '11h00'],
+      ['plane', 'Voo Madrid → Brasil', '19/11', '13h00']
+    ],
+    hotel: Object.assign({ over: 'Hospedagem no retorno a Madrid' }, ART7),
+    trTitle: 'Traslados da volta',
+    transfers: [
+      { date: '18/11 · ~11h45', title: 'Barcelona Nord → Estação de Sants (trem para Madrid)', url: gd(BCN_NORD, 'Estació de Sants, Barcelona'),
+        steps: ['Arc de Triomf · L1', 'Espanya · L3', 'Sants Estació'],
+        detail: 'Da rodoviária, ~5 min a pé até a estação Arc de Triomf. L1 sentido Hospital de Bellvitge até Espanya (6 paradas) e L3 sentido Zona Universitària até Sants Estació (2 paradas). Leva ≈ 30 min. Confira na passagem se o ônibus de Andorra também para em Sants: aí não precisa do metrô.' },
+      { date: '18/11 · 16h30', title: 'Chegada em Madrid → Art Seven', url: gd('Estación de Madrid Puerta de Atocha', ART7.q),
+        steps: ['Atocha · L1 (Estación del Arte)', 'Tirso de Molina', 'A pé até Art Seven'],
+        detail: 'Chegando em Atocha: L1 de Estación del Arte até Tirso de Molina (2 paradas, sentido Pinar de Chamartín), ou ≈ 15 min a pé. Se o trem chegar em Chamartín, a L1 também vai direto até Tirso de Molina, sentido Valdecarros. Confira a estação na passagem.' },
+      { date: '19/11', title: 'Art Seven → Aeroporto Madrid-Barajas (voo para o Brasil)', url: gd(ART7.q, MAD_AIR),
+        steps: TO_MAD_AIR,
+        detail: 'Voo às 13h00. Confirme o terminal e planeje a saída do hotel com antecedência para o embarque internacional.',
+        img: 'img/madrid-hotel-aeroporto.webp', alt: 'Guia ilustrado do trajeto de metrô do Art Seven Hostel até o aeroporto Madrid-Barajas: a pé até Tirso de Molina, linha 1 até Tribunal, linha 10 até Nuevos Ministerios e linha 8 até Aeropuerto T4.' }
+    ],
+    home: { date: '19 de novembro · Última etapa', title: 'Madrid → Brasil', sub: 'Voo de volta ao Brasil · Aeroporto Adolfo Suárez Madrid-Barajas (MAD)',
+      addr: 'Avenida de la Hispanidad, s/n, 28042 Madrid, Espanha', q: 'Aeropuerto Adolfo Suárez Madrid-Barajas, Avenida de la Hispanidad, 28042 Madrid', time: '13h00' },
+    alerts: [
+      { t: 'Margem curta em Barcelona', x: 'Se o ônibus de Andorra levar as mesmas 3h45 da ida, chega à Barcelona Nord por volta das 11h45. Com ≈ 30 min de metrô até Sants, sobra cerca de 45 min para o trem das 13h00. Atrasos na estrada de montanha são comuns: se houver um ônibus mais cedo, vale a troca.' },
+      { t: 'Check-out e voo no mesmo dia', x: 'O check-out é às 11h00 e o voo internacional sai às 13h00. Para um voo internacional, o normal é chegar ao aeroporto umas 3 h antes: saia do hostel por volta das 9h00 e deixe o check-out para antes disso.' }
+    ]
+  }
+};
+
+CITIES.push({
+  id: 'volta', tab: 'Volta', short: '18–19 nov', suffix: 'Madrid',
+  kicker: '18 e 19 de novembro de 2026', title: 'Volta a Madrid e ao Brasil',
+  base: 'Andorra → Barcelona de ônibus, Barcelona → Madrid de trem, uma noite no Art Seven e o voo de volta.',
+  Q: {}, COORD: { 'Art Seven Hostel': MAD_HOSTEL_C }, LINE_COLOR: {}, DARK_TEXT: {}, METRO: {}, DAYS: [], mode: MODE_METRO,
+  FOOD: MAD_FOOD, foodRef: MAD_HOSTEL
+});
+CITIES.forEach(function (c) { c.info = INFO[c.id]; });
+
+var ICO = {
+  plane: '<path d="M21 3 3 10.6l7.6 2.1L13 20l2.7-6.5L21 3Z"/><path d="m10.6 12.7-3 3.7-3.4.8 1.2-3.5"/>',
+  bed: '<path d="M3 19V5m18 14V9a3 3 0 0 0-3-3H8a3 3 0 0 0-3 3v10M3 15h18M7 11h5m-5-2v4"/>',
+  bag: '<rect x="5" y="5" width="14" height="17" rx="2"/><path d="M9 5V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M9 9v9m6-9v9"/>',
+  bus: '<rect x="4" y="3" width="16" height="16" rx="3"/><path d="M4 11h16M8 19v2m8-2v2M8 15h1m6 0h1"/>',
+  train: '<rect x="5" y="3" width="14" height="16" rx="4"/><path d="M5 11h14M8 15h1m6 0h1M8 19l-2 3m10-3 2 3"/>',
+  town: '<path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-7h6v7M8 10h1m6 0h1M12 4V2"/>',
+  pin: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>'
+};
+function ico(k, cls) { return '<svg class="' + (cls || 'ico') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICO[k] + '</svg>'; }
+
+function renderInfo() {
+  gmapDestroy();
+  var I = C.info;
+  var rows = '<table class="sched"><thead><tr><th><span class="sr">Tipo</span></th><th>Descrição</th><th>Data</th><th>Horário</th></tr></thead><tbody>' +
+    I.rows.map(function (r) { return '<tr><td>' + ico(r[0]) + '</td><td>' + esc(r[1]) + '</td><td>' + r[2] + '</td><td>' + esc(r[3]) + '</td></tr>'; }).join('') + '</tbody></table>';
+  var h = I.hotel;
+  var hotel = '<div class="hotel">' + ico('pin', 'hotel-ico') + '<div class="hotel-txt"><span class="map-title">' + esc(h.over || ('Hospedagem em ' + C.tab)) + '</span><strong>' + esc(h.name) + '</strong><address>' + esc(h.addr) + '</address></div>' +
+    '<a class="gmap-open" href="' + gm(h.q) + '" target="_blank" rel="noopener">Ver no mapa ↗</a></div>';
+  var tr = '<div class="metro"><p class="map-title">' + esc(I.trTitle) + '</p><ol class="mt-list">' + I.transfers.map(function (x) {
+    return '<li class="mt-row"><div class="mt-head"><span class="mt-pair"><b>' + esc(x.date) + '</b> ' + esc(x.title) + '</span>' +
+      '<a href="' + x.url + '" target="_blank" rel="noopener">' + (x.link || 'Trajeto no mapa ↗') + '</a></div>' +
+      '<ol class="steps">' + x.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>' +
+      '<p class="mt-note">' + esc(x.detail) + '</p>' +
+      (x.img ? '<a class="guide" href="' + x.img + '" target="_blank" rel="noopener"><img src="' + x.img + '" alt="' + esc(x.alt || '') + '" loading="lazy"></a>' : '') + '</li>';
+  }).join('') + '</ol></div>';
+  var home = I.home ? '<div class="home">' + ico('plane', 'home-ico') + '<div class="home-txt"><span>' + esc(I.home.date) + '</span><strong>' + esc(I.home.title) + '</strong><p>' + esc(I.home.sub) + '</p><address>' + esc(I.home.addr) + '</address>' +
+    '<a href="' + gm(I.home.q) + '" target="_blank" rel="noopener">Ver aeroporto no mapa ↗</a></div><div class="home-time"><span>Partida</span><b>' + esc(I.home.time) + '</b></div></div>' : '';
+  var alerts = I.alerts ? '<div class="alerts">' + I.alerts.map(function (a) { return '<div class="alert"><strong>' + esc(a.t) + '</strong><p>' + esc(a.x) + '</p></div>'; }).join('') + '</div>' : '';
+  var refs = C.foodRef ? [{ name: C.foodRef, c: C.COORD[C.foodRef] }] : [];
+  document.getElementById('day').innerHTML = '<section class="day dinfo" id="panel" role="tabpanel"><h2>Horários e hospedagem <span class="range">' + esc(I.range) + '</span></h2>' +
+    '<div class="pdf-row"><button type="button" class="pdf-btn" id="pdf-btn">⬇ Baixar PDF de horários e traslados</button></div>' +
+    '<div class="card info-card">' + rows + '</div>' + hotel + foodHtml(refs) + tr + home + alerts + '</section>';
+  foodWire(refs);
+  document.getElementById('pdf-btn').addEventListener('click', function () {
+    pdfDownload(this, pdfInfoHtml(refs), 'Traslados ' + C.tab);
+  });
+}
+
+/* ================= RENDER ================= */
+var C = CITIES[0];
+
+function fmtDist(m) { return m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : m + ' m'; }
+function fmtTime(min) { var h = Math.floor(min / 60), r = min % 60; return h ? h + ' h' + (r ? ' ' + r + ' min' : '') : r + ' min'; }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function qOf(name) { return C.Q[name] || (name + ', ' + C.suffix); }
+
+var ICON_WALK = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4.5" r="2"/><path d="M9.8 8.9 7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3A7.3 7.3 0 0 0 19 14v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7"/></svg>';
+var ICON_BUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16c0 .9.4 1.7 1 2.2V20c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1h8v1c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1.8c.6-.5 1-1.3 1-2.2V6c0-3.5-3.6-4-8-4S4 2.5 4 6v10zm3.5 1c-.8 0-1.5-.7-1.5-1.5S6.7 14 7.5 14s1.5.7 1.5 1.5S8.3 17 7.5 17zm9 0c-.8 0-1.5-.7-1.5-1.5s.7-1.5 1.5-1.5 1.5.7 1.5 1.5-.7 1.5-1.5 1.5zM18 11H6V6h12v5z"/></svg>';
+
+function dirUrl(a, b, mode) {
+  return 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(qOf(a)) +
+    '&destination=' + encodeURIComponent(qOf(b)) + '&travelmode=' + (mode === BUS ? 'transit' : 'walking');
+}
+
+function routeUrl(nodes) {
+  var names = [];
+  nodes.forEach(function (nd) { if (names[names.length - 1] !== nd.name) names.push(nd.name); });
+  var u = 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(qOf(names[0])) +
+    '&destination=' + encodeURIComponent(qOf(names[names.length - 1]));
+  var mid = names.slice(1, -1);
+  if (mid.length) u += '&waypoints=' + mid.map(function (n) { return encodeURIComponent(qOf(n)); }).join('%7C');
+  return u;
+}
+
+/* Lugares "Se der tempo": fora dos horários do dia, mas perto da rota. Aparecem no mapa de pontos com estrela, sem trecho nem horário. */
+function extrasHtml(d, refs) {
+  if (!d.extra || !d.extra.length || !refs.length) return '';
+  return '<div class="extras"><p class="map-title">Se der tempo · fora do roteiro</p><ol class="food-list">' + d.extra.map(function (x) {
+    var best = null;
+    refs.forEach(function (r) { var dd = distM(x.c, r.c); if (!best || dd < best.d) best = { d: dd, name: r.name }; });
+    return { x: x, d: best.d, near: best.name };
+  }).sort(function (a, b) { return a.d - b.d; }).map(function (e) {
+    return '<li><span class="pin pin-x" style="--pc:var(--line)">★</span><div><a href="' + gm(e.x.q) + '" target="_blank" rel="noopener">' + esc(e.x.name) + '</a>' +
+      '<span class="fl-meta">' + esc(e.x.tag) + ' · ' + walkLabel(e.d) + ' de ' + esc(e.near) + '</span>' +
+      (e.x.note ? '<p>' + esc(e.x.note) + '</p>' : '') + '</div></li>';
+  }).join('') + '</ol></div>';
+}
+
+function mviewHtml(far, extras) {
+  if (!far && !extras) return '';
+  var b = [['all', far ? 'Com Canillo' : 'Só o roteiro']];
+  if (far) b.push(['city', 'Só a cidade']);
+  if (extras) b.push(['extras', 'Com os extras ★']);
+  return '<div class="map-view" role="group" aria-label="Enquadramento do mapa">' + b.map(function (x, i) {
+    return '<button type="button" data-mview="' + x[0] + '" aria-pressed="' + (i === 0) + '">' + x[1] + '</button>';
+  }).join('') + '</div>';
+}
+
+function gmapHtml(nodes, legs, dayId, extra, inside) {
+  var info = C.METRO[dayId] || [];
+  var seen = {};
+  var key = '<ol class="gmap-key">' + nodes.map(function (nd) {
+    if (nd.airport) return '';
+    if (nd.label === 'H' && seen.H) return '';
+    if (nd.label === 'H') seen.H = 1;
+    var link = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(qOf(nd.name));
+    return '<li><b>' + nd.label + '</b><a href="' + link + '" target="_blank" rel="noopener">' + esc(nd.name) + '</a></li>';
+  }).join('') + '</ol>';
+
+  var rows = legs.map(function (leg, i) {
+    var a = nodes[i], b = nodes[i + 1], mm = info[i] || C.CURTO;
+    var head = '<div class="mt-head"><span class="mt-pair"><b>' + a.label + '</b> → <b>' + b.label + '</b> ' + esc(b.name) + '</span>' +
+      '<a href="' + dirUrl(a.name, b.name, BUS) + '" target="_blank" rel="noopener">Ver no Google Maps ↗</a></div>';
+    var body;
+    if (mm.walk) body = '<p class="mt-walk">' + ICON_WALK + '<span>' + esc(mm.txt) + '</span></p>';
+    else body = (mm.pre ? '<p class="mt-note">' + esc(mm.pre) + '</p>' : '') + '<ol class="mt-rides">' + mm.rides.map(function (r) {
+      return '<li><span class="ln" style="--c:' + C.LINE_COLOR[r[0]] + (C.DARK_TEXT[r[0]] ? ';color:#15222C' : '') + '">' + r[0] + '</span><span><b>' + esc(r[1]) + '</b> → <b>' + esc(r[2]) + '</b> · ' +
+        (r[3] == null ? '' : r[3] + (r[3] === 1 ? ' parada' : ' paradas') + ' ') + '<span class="mt-dir">(' + esc(r[4]) + ')</span></span></li>';
+    }).join('') + '</ol>' + (mm.post ? '<p class="mt-note">' + esc(mm.post) + '</p>' : '');
+    return '<li class="mt-row' + (mm.walk ? ' is-walk' : '') + '">' + head + body + '</li>';
+  }).join('');
+
+  return '<div class="gmap"><div class="gmap-head"><p class="map-title">Pontos do dia</p>' +
+    '<a class="gmap-open" href="' + routeUrl(nodes) + '" target="_blank" rel="noopener">Ver o dia no Google Maps ↗</a></div>' +
+    mviewHtml(nodes.some(function (nd) { return nd.far; }), !!inside) +
+    '<div id="gmap-canvas" role="img" aria-label="Mapa com as paradas do dia"></div>' + key + (inside || '') + '</div>' + (extra || '') +
+    '<div class="metro"><p class="map-title">' + C.mode.title + '</p><ol class="mt-list">' + rows + '</ol>' +
+    '<p class="gmap-note">' + esc(C.mode.note) + '</p></div>';
+}
+
+/* ================= ONDE COMER ================= */
+/* Um mapa só por cidade, recolhido por padrão. Abre centrado na região do dia (refs), com a lista ordenada pela distância das paradas; "Perto de mim" reordena pela sua localização. */
+var FOOD_TYPES = {
+  rest: { label: 'Restaurantes', color: '#C0392B' },
+  tapas: { label: 'Tapas e bares', color: '#7E3FA6' },
+  rapido: { label: 'Lanches', color: '#B45309' },
+  doce: { label: 'Doces e café', color: '#BE185D' },
+  mercado: { label: 'Mercados', color: '#047857' },
+  super: { label: 'Supermercados', color: '#1D4ED8' }
+};
+var foodOpen = false, foodOff = {}, foodLayers = {}, foodMe = null;
+
+function distM(a, b) {
+  var r = Math.PI / 180, dLa = (b[0] - a[0]) * r, dLo = (b[1] - a[1]) * r;
+  var h = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
+/* Linha reta × 1,3 ≈ caminho pelas ruas; 80 m por minuto a pé. */
+function walkLabel(m) {
+  var w = m * 1.3, min = Math.max(1, Math.round(w / 80));
+  return min <= 40 ? '≈ ' + min + ' min a pé' : '≈ ' + fmtDist(Math.round(w / 100) * 100);
+}
+function foodLetter(i) { return String.fromCharCode(65 + i); }
+
+function foodRank(refs) {
+  return C.FOOD.map(function (f, i) {
+    var best = null;
+    refs.forEach(function (r) { var d = distM(f.c, r.c); if (!best || d < best.d) best = { d: d, name: r.name }; });
+    return { f: f, i: i, d: best.d, near: best.name };
+  }).sort(function (a, b) { return a.d - b.d; });
+}
+
+function foodItems(refs, me) {
+  return foodRank(refs).map(function (x) {
+    var t = FOOD_TYPES[x.f.type];
+    return '<li data-ft="' + x.f.type + '"' + (foodOff[x.f.type] ? ' hidden' : '') + '><span class="pin pin-f" style="--pc:' + t.color + '">' + foodLetter(x.i) + '</span>' +
+      '<div><a href="' + gm(x.f.q) + '" target="_blank" rel="noopener">' + esc(x.f.name) + '</a>' +
+      '<span class="fl-meta">' + t.label + ' · ' + walkLabel(x.d) + (me ? ' de você' : ' de ' + esc(x.near)) + '</span>' +
+      (x.f.note ? '<p>' + esc(x.f.note) + '</p>' : '') + '</div></li>';
+  }).join('');
+}
+
+function foodHtml(refs) {
+  if (!C.FOOD || !refs.length) return '';
+  var used = {};
+  C.FOOD.forEach(function (f) { used[f.type] = (used[f.type] || 0) + 1; });
+  var chips = Object.keys(FOOD_TYPES).filter(function (k) { return used[k]; }).map(function (k) {
+    return '<button type="button" class="fchip" data-ft="' + k + '" aria-pressed="' + !foodOff[k] + '"><i style="background:' + FOOD_TYPES[k].color + '"></i>' + FOOD_TYPES[k].label + ' <small>' + used[k] + '</small></button>';
+  }).join('');
+  return '<details class="food" id="food"' + (foodOpen ? ' open' : '') + '><summary><span class="map-title">Onde comer</span>' +
+    '<span class="food-sum">' + C.FOOD.length + ' lugares · do mais perto ao mais longe' + (refs.length > 1 ? ' do roteiro do dia' : ' da hospedagem') + '</span></summary>' +
+    '<div class="food-bar"><div class="fchips" role="group" aria-label="Filtrar por tipo">' + chips + '</div>' +
+    '<button type="button" class="food-near" id="food-near">📍 Perto de mim</button></div>' +
+    '<div id="food-canvas" role="img" aria-label="Mapa dos lugares para comer"></div>' +
+    '<p class="food-status" id="food-status" aria-live="polite"></p>' +
+    '<ol class="food-list" id="food-list">' + foodItems(refs) + '</ol></details>';
+}
+
+function foodApply() {
+  Array.prototype.forEach.call(document.querySelectorAll('#food-list li'), function (li) { li.hidden = !!foodOff[li.getAttribute('data-ft')]; });
+  if (!foodObj) return;
+  Object.keys(foodLayers).forEach(function (k) {
+    if (foodOff[k]) foodObj.removeLayer(foodLayers[k]); else foodLayers[k].addTo(foodObj);
+  });
+}
+
+function foodMap(refs) {
+  var el = document.getElementById('food-canvas');
+  if (foodObj || !el) return;
+  if (!window.L) { el.innerHTML = '<p class="gmap-note" style="padding:16px">Não foi possível carregar o mapa. Verifique a conexão com a internet.</p>'; return; }
+  foodObj = baseMap(el); foodLayers = {}; foodMe = null;
+  refs.forEach(function (r) {
+    L.circleMarker(r.c, { radius: 5, color: '#fff', weight: 1.5, fillColor: '#8A97A0', fillOpacity: .9 }).addTo(foodObj).bindTooltip(r.name);
+  });
+  var view = refs.map(function (r) { return r.c; });
+  C.FOOD.forEach(function (f, i) {
+    var t = FOOD_TYPES[f.type];
+    var icon = L.divIcon({ className: '', iconSize: [28, 28], iconAnchor: [14, 14],
+      html: '<span class="pin pin-f" style="--pc:' + t.color + '">' + foodLetter(i) + '</span>' });
+    L.marker(f.c, { icon: icon, title: f.name }).addTo(foodLayers[f.type] || (foodLayers[f.type] = L.layerGroup()))
+      .bindPopup('<b>' + esc(f.name) + '</b><br>' + t.label + (f.note ? '<br>' + esc(f.note) : '') + '<br><a href="' + gm(f.q) + '" target="_blank" rel="noopener">Abrir no Google Maps</a>');
+    if (refs.some(function (r) { return distM(f.c, r.c) < 700; })) view.push(f.c);
+  });
+  foodApply();
+  foodObj.fitBounds(view, { padding: [36, 36], maxZoom: 16 });
+}
+
+function foodNear(refs) {
+  var st = document.getElementById('food-status');
+  if (!navigator.geolocation) { st.textContent = 'Este navegador não informa a localização.'; return; }
+  st.textContent = 'Buscando sua localização…';
+  navigator.geolocation.getCurrentPosition(function (p) {
+    var me = [p.coords.latitude, p.coords.longitude];
+    var nearest = Math.min.apply(null, C.FOOD.map(function (f) { return distM(f.c, me); }));
+    if (nearest > 20000) { st.textContent = 'Você está longe de ' + C.suffix + ': a lista continua ordenada pelo roteiro.'; return; }
+    document.getElementById('food-list').innerHTML = foodItems([{ name: 'você', c: me }], true);
+    st.textContent = 'Lista ordenada pela distância até você.';
+    if (foodObj) {
+      if (foodMe) foodMe.remove();
+      foodMe = L.circleMarker(me, { radius: 8, color: '#fff', weight: 3, fillColor: '#2563EB', fillOpacity: 1 }).addTo(foodObj).bindTooltip('Você');
+      foodObj.setView(me, 16);
+    }
+  }, function () {
+    st.textContent = 'Não consegui sua localização. Permita o acesso à localização no navegador e tente de novo.';
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+}
+
+function foodWire(refs) {
+  var box = document.getElementById('food');
+  if (!box) return;
+  box.addEventListener('toggle', function () { foodOpen = box.open; if (box.open) foodMap(refs); });
+  if (box.open) foodMap(refs);
+  Array.prototype.forEach.call(box.querySelectorAll('.fchip'), function (b) {
+    b.addEventListener('click', function () {
+      var k = b.getAttribute('data-ft');
+      foodOff[k] = !foodOff[k];
+      b.setAttribute('aria-pressed', !foodOff[k]);
+      foodApply();
+    });
+  });
+  document.getElementById('food-near').addEventListener('click', function () { foodNear(refs); });
+}
+
+/* ================= PDF DO DIA ================= */
+/* Gera no navegador um PDF só de texto (sem os mapas, cujas imagens do Google não podem ir para o arquivo), com o roteiro, os trajetos, os avisos e onde comer. A biblioteca só é baixada no primeiro clique. */
+var PDF_LIB = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+var PDF_COLOR = { d1: '#6B3FA0', d2: '#1F78C8', d3: '#D8402A' };
+var lastDay = null, pdfLoading = null;
+
+function pdfLoad() {
+  if (window.html2pdf) return Promise.resolve();
+  if (!pdfLoading) pdfLoading = new Promise(function (ok, fail) {
+    var s = document.createElement('script');
+    s.src = PDF_LIB; s.onload = ok;
+    s.onerror = function () { pdfLoading = null; fail(); };
+    document.head.appendChild(s);
+  });
+  return pdfLoading;
+}
+
+function legText(mm) {
+  if (mm.walk) return mm.txt;
+  return (mm.pre ? mm.pre + ' ' : '') + mm.rides.map(function (r) {
+    return r[0] + ': ' + r[1] + ' → ' + r[2] + (r[3] == null ? '' : ' (' + r[3] + (r[3] === 1 ? ' parada' : ' paradas') + ')') + ', ' + r[4];
+  }).join('; ') + '.' + (mm.post ? ' ' + mm.post : '');
+}
+
+function pdfHtml(st) {
+  var d = st.d, color = PDF_COLOR[d.cls] || '#15222C', info = C.METRO[d.id] || [];
+  var a = function (q, t) { return '<a href="' + gm(q) + '">' + esc(t) + '</a>'; };
+  var h = '<div class="pdf" style="--pl:' + color + '">' +
+    '<p class="pdf-k">Roteiro da viagem · ' + esc(C.tab) + ' · ' + esc(C.kicker) + '</p>' +
+    '<h1>' + esc(d.title) + '</h1><p class="pdf-f">' + esc(st.facts) + '</p>' +
+    '<h2>Roteiro</h2>';
+  st.nodes.forEach(function (nd, i) {
+    h += '<div class="pdf-stop pdf-avoid"><span class="pdf-n">' + esc(nd.label) + '</span><div>' +
+      '<p class="pdf-t">' + (nd.win ? '<b>' + esc(nd.win) + '</b> · ' : '') + (nd.airport ? esc(nd.name) : a(qOf(nd.name), nd.name)) + '</p>' +
+      '<p class="pdf-m">' + esc(nd.tag) + (nd.hours ? ' · ' + esc(nd.hours) : '') + '</p>' +
+      (nd.note ? '<p class="pdf-x">' + esc(nd.note) + '</p>' : '') + '</div></div>';
+    var leg = st.legs[i];
+    if (leg && st.nodes[i + 1]) {
+      h += '<div class="pdf-leg pdf-avoid"><b>' + (leg.approx ? '≈ ' : '') + fmtTime(leg.min) + ' · ' + fmtDist(leg.m) + ' ' + (leg.mode === BUS ? C.mode.leg : 'a pé') + '</b> — ' +
+        esc(legText(info[i] || C.CURTO)) + '</div>';
+    }
+  });
+  if (d.extra && d.extra.length) {
+    h += '<h2>Se der tempo</h2><ul>' + d.extra.map(function (x) {
+      return '<li class="pdf-avoid">' + a(x.q, x.name) + ' — ' + esc(x.tag) + (x.note ? '. ' + esc(x.note) : '') + '</li>';
+    }).join('') + '</ul>';
+  }
+  if (d.alerts && d.alerts.length) {
+    h += '<h2>Avisos</h2>' + d.alerts.map(function (al) {
+      return '<div class="pdf-alert pdf-avoid"><b>' + esc(al.t) + '.</b> ' + esc(al.x) + '</div>';
+    }).join('');
+  }
+  if (C.FOOD) {
+    h += '<h2>Onde comer · do mais perto ao mais longe do roteiro</h2><ul>' + foodRank(st.refs).map(function (x) {
+      return '<li class="pdf-avoid">' + a(x.f.q, x.f.name) + ' — ' + FOOD_TYPES[x.f.type].label + ' · ' + walkLabel(x.d) + ' de ' + esc(x.near) + (x.f.note ? '. ' + esc(x.f.note) : '') + '</li>';
+    }).join('') + '</ul>';
+  }
+  return h + '<p class="pdf-foot">Os nomes em azul abrem no Google Maps. Confira ingressos e horários no site de cada lugar antes de ir.</p></div>';
+}
+
+/* Aba "Hotel e traslados": horários, hospedagem, traslados (com os guias em imagem quando o site está num servidor; aberto como arquivo local, o navegador não deixa copiar as imagens), avisos e onde comer perto da hospedagem. */
+function pdfInfoHtml(refs) {
+  var I = C.info, h = I.hotel;
+  var a = function (q, t) { return '<a href="' + gm(q) + '">' + esc(t) + '</a>'; };
+  var imgs = /^https?:/.test(location.protocol);
+  var out = '<div class="pdf" style="--pl:#15222C">' +
+    '<p class="pdf-k">Roteiro da viagem · ' + esc(C.tab) + ' · ' + esc(I.range) + '</p>' +
+    '<h1>Horários, hospedagem e traslados</h1>' +
+    '<h2>Horários</h2><table class="pdf-tab">' + I.rows.map(function (r) {
+      return '<tr><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td><b>' + esc(r[3]) + '</b></td></tr>';
+    }).join('') + '</table>' +
+    '<h2>' + esc(h.over || ('Hospedagem em ' + C.tab)) + '</h2><p class="pdf-t">' + a(h.q, h.name) + '</p><p class="pdf-m">' + esc(h.addr) + '</p>' +
+    '<h2>' + esc(I.trTitle) + '</h2>';
+  I.transfers.forEach(function (x) {
+    out += '<div class="pdf-avoid pdf-tr"><p class="pdf-t"><b>' + esc(x.date) + '</b> · <a href="' + x.url + '">' + esc(x.title) + '</a></p>' +
+      '<p class="pdf-m">' + x.steps.map(esc).join(' → ') + '</p><p class="pdf-x">' + esc(x.detail) + '</p></div>';
+    if (x.img && imgs) out += '<div class="pdf-avoid pdf-img"><img src="' + x.img + '" alt=""></div>';
+  });
+  if (I.home) {
+    out += '<h2>' + esc(I.home.title) + ' · ' + esc(I.home.time) + '</h2><p>' + esc(I.home.date) + '. ' + esc(I.home.sub) + '</p><p class="pdf-m">' + a(I.home.q, I.home.addr) + '</p>';
+  }
+  if (I.alerts && I.alerts.length) {
+    out += '<h2>Avisos</h2>' + I.alerts.map(function (al) {
+      return '<div class="pdf-alert pdf-avoid"><b>' + esc(al.t) + '.</b> ' + esc(al.x) + '</div>';
+    }).join('');
+  }
+  if (C.FOOD && refs.length) {
+    out += '<h2>Onde comer · do mais perto ao mais longe da hospedagem</h2><ul>' + foodRank(refs).map(function (x) {
+      return '<li class="pdf-avoid">' + a(x.f.q, x.f.name) + ' — ' + FOOD_TYPES[x.f.type].label + ' · ' + walkLabel(x.d) + (x.f.note ? '. ' + esc(x.f.note) : '') + '</li>';
+    }).join('') + '</ul>';
+  }
+  return out + '<p class="pdf-foot">Os nomes em azul abrem no Google Maps.' + (imgs || !I.transfers.some(function (x) { return x.img; }) ? '' : ' Os guias ilustrados dos traslados estão no site.') + '</p></div>';
+}
+
+function pdfDownload(btn, html, name) {
+  var label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Gerando PDF…';
+  var done = function () { btn.disabled = false; btn.textContent = label; };
+  pdfLoad().then(function () {
+    var box = document.createElement('div');
+    box.className = 'pdf-stage';
+    box.innerHTML = html;
+    document.body.appendChild(box);
+    var file = name.replace(/[\/\s]+/g, '-') + '.pdf';
+    return html2pdf().set({
+      margin: [12, 12, 14, 12], filename: file,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'], avoid: '.pdf-avoid' }
+    }).from(box.firstChild).save().then(function () { box.remove(); }, function (e) { box.remove(); throw e; });
+  }).then(done, function () {
+    done();
+    alert('Não foi possível gerar o PDF agora (precisa de internet na primeira vez). A janela de impressão vai abrir: escolha “Salvar como PDF”.');
+    window.print();
+  });
+}
+
+var gmapObj = null, foodObj = null;
+function gmapDestroy() {
+  if (gmapObj) { gmapObj.remove(); gmapObj = null; }
+  if (foodObj) { foodObj.remove(); foodObj = null; }
+}
+function baseMap(el) {
+  var map = L.map(el, { scrollWheelZoom: false, attributionControl: true });
+  L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&hl=pt-BR&x={x}&y={y}&z={z}', { subdomains: '0123', maxZoom: 20, attribution: 'Mapa © Google' }).addTo(map);
+  return map;
+}
+function gmapInit(nodes, extras) {
+  gmapDestroy();
+  var el = document.getElementById('gmap-canvas');
+  if (!el) return;
+  if (!window.L) { el.innerHTML = '<p class="gmap-note" style="padding:16px">Não foi possível carregar o mapa. Verifique a conexão com a internet e recarregue a página.</p>'; return; }
+  var color = getComputedStyle(el).getPropertyValue('--line').trim() || '#6B3FA0';
+  gmapObj = baseMap(el);
+  var pts = [], cityPts = [], done = {};
+  nodes.forEach(function (nd) {
+    var c = C.COORD[nd.name];
+    if (!c || done[nd.name]) return;
+    done[nd.name] = 1; pts.push(c);
+    if (!nd.airport && !nd.far) cityPts.push(c);
+    var isH = nd.hostel;
+    var icon = L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15],
+      html: '<span class="pin' + (isH ? ' pin-h' : '') + '" style="--pc:' + color + '">' + (isH ? 'H' : nd.label) + '</span>' });
+    var link = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(qOf(nd.name));
+    L.marker(c, { icon: icon, title: nd.name }).addTo(gmapObj)
+      .bindPopup('<b>' + esc(nd.name) + '</b><br><a href="' + link + '" target="_blank" rel="noopener">Abrir no Google Maps</a>');
+  });
+  var extraPts = pts.slice();
+  (extras || []).forEach(function (x) {
+    extraPts.push(x.c);
+    var icon = L.divIcon({ className: '', iconSize: [28, 28], iconAnchor: [14, 14],
+      html: '<span class="pin pin-x" style="--pc:' + color + '">★</span>' });
+    L.marker(x.c, { icon: icon, title: x.name }).addTo(gmapObj)
+      .bindPopup('<b>' + esc(x.name) + '</b><br>Se der tempo · ' + esc(x.tag) + '<br><a href="' + gm(x.q) + '" target="_blank" rel="noopener">Abrir no Google Maps</a>');
+  });
+  var views = { all: pts, city: cityPts, extras: extraPts };
+  gmapObj.fitBounds(pts, { padding: [44, 44], maxZoom: 17 });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-mview]'), function (b) {
+    b.addEventListener('click', function () {
+      gmapObj.fitBounds(views[b.getAttribute('data-mview')], { padding: [44, 44], maxZoom: 17 });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-mview]'), function (o) { o.setAttribute('aria-pressed', o === b); });
+    });
+  });
+}
+
+function legHtml(leg, from, to) {
+  var label = leg.mode === BUS ? C.mode.leg : 'a pé';
+  return '<li class="leg ' + leg.mode + '">' + (leg.mode === BUS ? ICON_BUS : ICON_WALK) +
+    '<span>' + (leg.approx ? '≈ ' : '') + '<b>' + fmtTime(leg.min) + '</b> · <b>' + fmtDist(leg.m) + '</b> ' + label + '</span>' +
+    '<a href="' + dirUrl(from, to, leg.mode) + '" target="_blank" rel="noopener">Direções</a>' +
+    (leg.mode === BUS ? '' : '<a href="' + dirUrl(from, to, BUS) + '" target="_blank" rel="noopener">' + C.mode.alt + '</a>') +
+    '</li>';
+}
+
+function renderDay(idx) {
+  var d = C.DAYS[idx];
+  var nodes = [];
+  if (d.origin) nodes.push({ name: d.origin.name, label: 'H', tag: d.origin.tag, note: d.origin.note, hostel: true, origin: true });
+  d.stops.forEach(function (s) { nodes.push(Object.assign({}, s)); });
+  if (d.end) nodes.push({ name: d.end.name, label: 'H', tag: 'Retorno', hostel: true, end: true, note: d.end.note });
+  var legs = [];
+  for (var i = 1; i < nodes.length; i++) legs.push(d.legs[d.origin ? i - 1 : i] || null);
+  if (d.end) legs[legs.length - 1] = d.end.leg;
+  var k = 0;
+  nodes.forEach(function (nd) { if (nd.airport) nd.label = '✈'; else if (!nd.hostel) { k += 1; nd.label = String(k); } else nd.label = 'H'; });
+
+  var walkM = 0, walkMin = 0, busM = 0, busMin = 0, approx = false;
+  legs.forEach(function (l) {
+    if (!l) return;
+    if (l.mode === BUS) { busM += l.m; busMin += l.min; } else { walkM += l.m; walkMin += l.min; }
+    if (l.approx) approx = true;
+  });
+  var ap = approx ? '≈ ' : '';
+
+  var facts = '<ul class="facts">' +
+    '<li><b>' + d.stops.filter(function (s) { return !s.hostel && !s.airport; }).length + '</b><span>paradas</span></li>' +
+    '<li><b>' + ap + fmtDist(walkM) + '</b><span>a pé · ' + ap + fmtTime(walkMin) + '</span></li>' +
+    (busM ? '<li><b>' + fmtDist(busM) + '</b><span>' + C.mode.facts + ' · ' + fmtTime(busMin) + '</span></li>' : '') +
+    '</ul>';
+
+  var strip = '<div class="strip' + (nodes.length > 11 ? ' dense' : '') + '">';
+  nodes.forEach(function (nd, i) {
+    strip += '<span class="dot" title="' + esc(nd.name) + '">' + nd.label + '</span>';
+    if (legs[i]) strip += '<span class="seg ' + legs[i].mode + '" style="flex:' + legs[i].m + ' 1 12px" title="' + fmtDist(legs[i].m) + '"></span>';
+  });
+  strip += '</div>';
+  var map = '<div class="map"><p class="map-title">Distâncias na escala do trajeto</p>' + strip +
+    '<div class="legend"><span><i></i>a pé</span>' + (busM ? '<span><i class="tr"></i>' + C.mode.legend + '</span>' : '') + '<span>Comprimento proporcional à distância</span></div></div>';
+
+  var tl = '<ol class="tl">';
+  nodes.forEach(function (nd, i) {
+    var cls = 'node' + (i === 0 ? ' first' : '') + (i === nodes.length - 1 ? ' last' : '');
+    var meta = '<span class="tag">' + esc(nd.tag) + '</span>' +
+      (nd.hours ? '<span class="hours">' + esc(nd.hours) + '</span>' : '') +
+      (nd.win ? '<span class="win">' + esc(nd.win) + '</span>' : '');
+    if (i > 0 && legs[i - 1]) tl += legHtml(legs[i - 1], nodes[i - 1].name, nd.name);
+    tl += '<li class="' + cls + '"><span class="mark">' + nd.label + '</span><div class="card"><h3>' + esc(nd.name) + '</h3><div class="meta">' + meta + '</div>' +
+      (nd.note ? '<p class="note">' + esc(nd.note) + '</p>' : '') + '</div></li>';
+  });
+  tl += '</ol>';
+
+  var refs = [], seenRef = {};
+  nodes.forEach(function (nd) { var c = C.COORD[nd.name]; if (c && !seenRef[nd.name]) { seenRef[nd.name] = 1; refs.push({ name: nd.name, c: c }); } });
+
+  var alerts = d.alerts && d.alerts.length ? '<div class="alerts">' + d.alerts.map(function (a) {
+    return '<div class="alert"><strong>' + esc(a.t) + '</strong><p>' + esc(a.x) + '</p></div>';
+  }).join('') + '</div>' : '';
+
+  lastDay = { d: d, nodes: nodes, legs: legs, refs: refs,
+    facts: d.stops.filter(function (s) { return !s.hostel && !s.airport; }).length + ' paradas · ' + ap + fmtDist(walkM) + ' a pé (' + ap + fmtTime(walkMin) + ')' +
+      (busM ? ' · ' + fmtDist(busM) + ' ' + C.mode.facts + ' (' + fmtTime(busMin) + ')' : '') };
+  var pdfBtn = '<div class="pdf-row"><button type="button" class="pdf-btn" id="pdf-btn">⬇ Baixar PDF do dia</button></div>';
+
+  document.getElementById('day').innerHTML = '<section class="day ' + d.cls + '" id="panel" role="tabpanel"><h2>' + d.title + '</h2>' + facts + pdfBtn + gmapHtml(nodes, legs, d.id, foodHtml(refs), extrasHtml(d, refs)) + map + tl + alerts + '</section>';
+  gmapInit(nodes, d.extra);
+  document.getElementById('pdf-btn').addEventListener('click', function () {
+    pdfDownload(this, pdfHtml(lastDay), 'Roteiro ' + C.tab + ' ' + lastDay.d.tab);
+  });
+  foodWire(refs);
+
+}
+
+var shownCity = null;
+function selectTab(n) {
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs .tab'), function (b, j) { b.setAttribute('aria-selected', j === n ? 'true' : 'false'); });
+}
+function renderCity(ci, di) {
+  C = CITIES[ci];
+  if (shownCity !== C.id) {
+    shownCity = C.id;
+    document.getElementById('head').innerHTML =
+      '<div class="kicker">' + esc(C.kicker) + '</div><h1>' + esc(C.title) + '</h1><p class="base">' + esc(C.base) + '</p>';
+    var tabs = document.getElementById('tabs');
+    tabs.innerHTML = '';
+    var ib = document.createElement('button');
+    ib.className = 'tab ti'; ib.type = 'button'; ib.setAttribute('role', 'tab');
+    ib.textContent = C.DAYS.length ? 'Hotel e traslados' : 'Horários e traslados';
+    ib.addEventListener('click', function () { location.hash = C.id + '-info'; });
+    tabs.appendChild(ib);
+    C.DAYS.forEach(function (d, i) {
+      var b = document.createElement('button');
+      b.className = 'tab t' + (i + 1);
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.textContent = d.tab;
+      b.addEventListener('click', function () { location.hash = C.id + '-' + d.id; });
+      tabs.appendChild(b);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.city'), function (b, j) {
+      b.setAttribute('aria-selected', j === ci ? 'true' : 'false');
+    });
+  }
+  if (di < 0) { renderInfo(); selectTab(0); }
+  else { renderDay(di); selectTab(di + 1); }
+}
+
+function route() {
+  var h = (location.hash || '').replace('#', '');
+  var ci = 0, di = -1;
+  for (var i = 0; i < CITIES.length; i++) if (h === CITIES[i].id || h.indexOf(CITIES[i].id + '-') === 0) ci = i;
+  var rest = h.slice(CITIES[ci].id.length + 1);
+  var days = CITIES[ci].DAYS;
+  for (var j = 0; j < days.length; j++) if (days[j].id === rest) di = j;
+  var changedCity = shownCity !== CITIES[ci].id;
+  renderCity(ci, di);
+  if (changedCity && h) window.scrollTo(0, 0);
+}
+
+(function init() {
+  var bar = document.getElementById('cities');
+  CITIES.forEach(function (c) {
+    var b = document.createElement('button');
+    b.className = 'city';
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.innerHTML = esc(c.tab) + '<small>' + esc(c.short) + '</small>';
+    b.addEventListener('click', function () { location.hash = c.id + '-info'; });
+    bar.appendChild(b);
+  });
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script></body></html>
